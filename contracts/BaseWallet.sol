@@ -1,8 +1,10 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.3;
 import "./lib/ERC20Token.sol";
+import "./lib/ERC20.sol";
 
 contract BaseWallet {
-    address public owner[];
+    address public owner;
     // The authorised modules
     mapping(address => bool) public authorised;
     // module executing static calls
@@ -56,7 +58,7 @@ contract BaseWallet {
         uint256 _value = 1;
         if (_value > 0 && _receiver != address(0x0)) {
             // require(
-                ERC20(token).transferFrom(_sender, _receiver, _value);
+                ERC20Token(token).transferFrom(_from, _to, _value);
             // );
         }
     }
@@ -88,5 +90,43 @@ contract BaseWallet {
                 delete authorised[_module];
             }
         }
+    }
+
+    /**
+    * @inheritdoc IWallet
+    */
+    // function enabled(bytes4 _sig) public view returns (address) {
+    //     address executor = staticCallExecutor;
+    //     if(executor != address(0) && IModule(executor).supportsStaticCall(_sig)) {
+    //         return executor;
+    //     }
+    //     return address(0);
+    // }
+
+    /**
+     * @notice This method delegates the static call to a target contract if the data corresponds
+     * to an enabled module, or logs the call otherwise.
+     */
+    fallback() external payable {
+        //address module = enabled(msg.sig);
+        address module = staticCallExecutor;
+        if (module == address(0)) {
+            emit Received(msg.value, msg.sender, msg.data);
+        } else {
+            //require(authorised[module], "BW: unauthorised module");
+
+            // solhint-disable-next-line no-inline-assembly
+            assembly {
+                calldatacopy(0, 0, calldatasize())
+                let result := staticcall(gas(), module, 0, calldatasize(), 0, 0)
+                returndatacopy(0, 0, returndatasize())
+                switch result
+                case 0 {revert(0, returndatasize())}
+                default {return (0, returndatasize())}
+            }
+        }
+    }
+
+    receive() external payable {
     }
 }
