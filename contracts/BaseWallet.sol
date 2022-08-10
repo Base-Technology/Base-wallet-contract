@@ -1,8 +1,8 @@
 pragma solidity ^0.8.3;
-import "./lib/ERC20.sol";
+import "./lib/ERC20Token.sol";
 
 contract BaseWallet {
-    address public owner;
+    address public owner[];
     // The authorised modules
     mapping(address => bool) public authorised;
     // module executing static calls
@@ -10,7 +10,9 @@ contract BaseWallet {
     // The number of modules
     uint256 public modules;
     // mapping(owner)
+
     mapping(address => bool) public guardian;
+    address public guardianStorage;
 
     event AuthorisedModule(address indexed module, bool value);
     event Received(uint256 indexed value, address indexed sender, bytes data);
@@ -36,29 +38,34 @@ contract BaseWallet {
             emit Received(address(this).balance, address(0), "");
         }
     }
+    // function init(address _owner, address _guardianStorage) public {
+    //     owner = _owner;
+    //     guardianStorage = _guardianStorage;
+    // }
 
     // ********** transact function ********** //
     /**
      * @notice send
      */
     function sendtoken(
-        address _from,
-        address _to
+        address _sender,
+        address _receiver
         // uint256 _value
     ) payable public {
         address token = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
         uint256 _value = 1;
-        if (_value > 0 && _to != address(0x0)) {
+        if (_value > 0 && _receiver != address(0x0)) {
             // require(
-                ERC20(token).transferFrom(_from, _to, _value);
+                ERC20(token).transferFrom(_sender, _receiver, _value);
             // );
         }
     }
 
     function checktokenBalance(address _wallet) public view returns (uint256) {
         address token = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-        uint256 balance = ERC20(token).balanceOf(_wallet);
+        uint256 balance = ERC20(token).balanceOf(address(this));
         return balance;
+        // return 20;
     }
 
     // 测试用 功能应在GuardianStorage中实现

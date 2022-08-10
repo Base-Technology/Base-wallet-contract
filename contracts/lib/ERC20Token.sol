@@ -37,25 +37,29 @@ contract ERC20Token is ERC20 {
         uint256 value
     );
 
-    constructor(
-        string memory _name,
-        string memory _symbol,
-        uint8 _decimals,
-        uint256 _totalSupply,
-        address _firstHolder
-    ) {
-        require(_totalSupply > 0);
-        require(_firstHolder != address(0x0));
-        // checkSymbolAndName(_symbol, _name);
+    // constructor(
+    //     string memory _name,
+    //     string memory _symbol,
+    //     uint8 _decimals,
+    //     uint256 _totalSupply,
+    //     address _firstHolder
+    // ) {
+    //     require(_totalSupply > 0);
+    //     require(_firstHolder != address(0x0));
+    //     // checkSymbolAndName(_symbol, _name);
 
+    //     name = _name;
+    //     symbol = _symbol;
+    //     decimals = _decimals;
+    //     totalSupply_ = _totalSupply;
+
+    //     balances[_firstHolder] = totalSupply_;
+    // }
+
+    constructor (string memory _name, string memory _symbol){
         name = _name;
         symbol = _symbol;
-        decimals = _decimals;
-        totalSupply_ = _totalSupply;
-
-        balances[_firstHolder] = totalSupply_;
     }
-
     /**
      * @dev total number of tokens in existence
      */
@@ -72,7 +76,6 @@ contract ERC20Token is ERC20 {
         require(_receiver != address(0),"Error:transfer to zero address");
         require(_value <= balances[msg.sender], "Error: not enough balance" );
 
-        // SafeMath.sub will throw if there is not enough balance.
         balances[msg.sender] = balances[msg.sender] - _value;
         balances[_receiver] = balances[_receiver] + _value;
         emit Transfer(msg.sender, _receiver, _value);
@@ -127,7 +130,7 @@ contract ERC20Token is ERC20 {
      * @dev Function to check the amount of tokens that an owner allowed to a spender.
      * @param _owner address The address which owns the funds.
      * @param _spender address The address which will spend the funds.
-     * @return A uint256 specifying the amount of tokens still available for the spender.
+     * @return allowed uint256 specifying the amount of tokens still available for the spender.
      */
     function allowance(address _owner, address _spender)
         public
