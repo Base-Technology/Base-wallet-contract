@@ -2,9 +2,9 @@
 pragma solidity ^0.8.3;
 import "./lib/ERC20Token.sol";
 import "./lib/ERC20.sol";
+import "./ownerManager.sol";
 
 contract BaseWallet {
-    address public owner;
     // The authorised modules
     mapping(address => bool) public authorised;
     // module executing static calls
@@ -21,11 +21,11 @@ contract BaseWallet {
 
     function init(address _owner, address[] calldata _modules) external {
         require(
-            owner == address(0) && modules == 0,
+            modules == 0,
             "BW: wallet already initialised"
         );
         require(_modules.length > 0, "BW: empty modules");
-        owner = _owner;
+        ownerManager.addOwner(address(this), _owner);
         modules = _modules.length;
         for (uint256 i = 0; i < _modules.length; i++) {
             require(
@@ -58,7 +58,7 @@ contract BaseWallet {
         uint256 _value = 1;
         if (_value > 0 && _receiver != address(0x0)) {
             // require(
-                ERC20Token(token).transferFrom(_from, _to, _value);
+                ERC20Token(token).transferFrom(_sender, _receiver, _value);
             // );
         }
     }
@@ -68,6 +68,9 @@ contract BaseWallet {
         uint256 balance = ERC20(token).balanceOf(address(this));
         return balance;
         // return 20;
+    }
+    function getOwners(address _wallet) public view returns(address[] memory){
+        return ownerManager.getOwners(_wallet);
     }
 
     // 测试用 功能应在GuardianStorage中实现
