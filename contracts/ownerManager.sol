@@ -1,6 +1,7 @@
 pragma solidity ^0.8.3;
+import "./interface/OwnerInterface.sol";
 
-contract ownerManager {
+contract OwnerManager is IownerManager{
     struct ownerConfig {
         address[] owners;
         mapping(address => ownerInfo) ownersinfo;

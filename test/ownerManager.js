@@ -15,7 +15,7 @@ contract("basewallet", function (accounts) {
       modules = [module];
       wallet_1 = await BaseWallet.new();
       ownerM = await ownerManager.new();
-      await wallet_1.init(owner_1, modules);      
+      await wallet_1.init(owner_1, modules); 
     });
   
     describe("test ownerManager", () => {
@@ -75,6 +75,19 @@ contract("basewallet", function (accounts) {
         owners = await ownerM.getOwners(wallet_1.address)
         console.log('owners:')
         console.log(owners)
+      })
+      it("test ownerManager function in basewallet", async () => {
+        console.log(await wallet_1.getOwner(wallet_1.address))
+        console.log(await wallet_1.checkOwner(wallet_1.address,owner_1))
+        console.log(await wallet_1.checkOwner(wallet_1.address,owner_2))
+        console.log(await wallet_1.checkOwner(wallet_1.address,owner_3))
+        console.log(await wallet_1.checkOwner(wallet_1.address,owner_4))
+        // console.log(await wallet_1.getOwner())
+        // console.log(await wallet_1.checkOwner(owner_1))
+        // console.log(await wallet_1.checkOwner(owner_2))
+        // console.log(await wallet_1.checkOwner(owner_3))
+        // console.log(await wallet_1.checkOwner(owner_4))
+
       })
     });
   

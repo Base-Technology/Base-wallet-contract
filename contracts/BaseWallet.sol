@@ -2,7 +2,8 @@
 pragma solidity ^0.8.3;
 import "./lib/ERC20Token.sol";
 import "./lib/ERC20.sol";
-import "./ownerManager.sol";
+// import "./OwnerManager.sol";
+import "./interface/OwnerInterface.sol";
 
 contract BaseWallet {
     // The authorised modules
@@ -12,7 +13,7 @@ contract BaseWallet {
     // The number of modules
     uint256 public modules;
     // mapping(owner)
-
+    IownerManager ownerManager;
     mapping(address => bool) public guardian;
     address public guardianStorage;
 
@@ -25,7 +26,7 @@ contract BaseWallet {
             "BW: wallet already initialised"
         );
         require(_modules.length > 0, "BW: empty modules");
-        ownerManager.addOwner(address(this), _owner);
+        // ownerManager.addOwner(address(this), _owner);
         modules = _modules.length;
         for (uint256 i = 0; i < _modules.length; i++) {
             require(
@@ -40,6 +41,26 @@ contract BaseWallet {
             emit Received(address(this).balance, address(0), "");
         }
     }
+
+    
+    function checkOwner(address _wallet,address _owner)public view returns(bool){
+        return ownerManager.isOwner(_wallet, _owner);
+    }
+    function getOwner(address _wallet)public view returns(address[] memory){
+        return ownerManager.getOwners(_wallet);
+    }
+
+    // function checkOwner(address _owner)public view returns(bool){
+    //     return ownerManager.isOwner(address(this), _owner);
+    // }
+    // function getOwner()public view returns(address[] memory){
+    //     return ownerManager.getOwners(address(this));
+    // }
+    // function getadressthis() public view returns(address){
+    //     return address(this);
+    // }
+
+
     // function init(address _owner, address _guardianStorage) public {
     //     owner = _owner;
     //     guardianStorage = _guardianStorage;
@@ -68,9 +89,6 @@ contract BaseWallet {
         uint256 balance = ERC20(token).balanceOf(address(this));
         return balance;
         // return 20;
-    }
-    function getOwners(address _wallet) public view returns(address[] memory){
-        return ownerManager.getOwners(_wallet);
     }
 
     // 测试用 功能应在GuardianStorage中实现
