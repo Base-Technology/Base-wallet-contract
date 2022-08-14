@@ -28,6 +28,11 @@ contract BaseWallet {
     event AuthorisedModule(address indexed module, bool value);
     event Received(uint256 indexed value, address indexed sender, bytes data);
 
+    modifier moduleOnly {
+        require(authorised[msg.sender], "BW: sender not authorized");
+        _;
+    }
+
     function init(address _owner, address[] calldata _modules) external {
         require(modules == 0, "BW: wallet already initialised");
         require(_modules.length > 0, "BW: empty modules");
@@ -105,15 +110,16 @@ contract BaseWallet {
         delete ownersConfigs[_wallet].ownersinfo[_oldOwner];
     }
 
-    function getOwners(address _wallet)
+    function getOwners()
         external
         view
+        moduleOnly
         returns (address[] memory)
     {
-        uint256 len = ownersConfigs[_wallet].owners.length;
+        uint256 len = ownersConfigs[address(this)].owners.length;
         address[] memory owners = new address[](len);
         for (uint256 i = 0; i < len; i++) {
-            owners[i] = ownersConfigs[_wallet].owners[i];
+            owners[i] = ownersConfigs[address(this)].owners[i];
         }
         return owners;
     }
