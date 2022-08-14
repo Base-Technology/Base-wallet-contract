@@ -48,8 +48,7 @@ interface IWallet {
 
 /**
      * @notice get all the owners of the wallet
-     * @param _wallet The target wallet.
      * @return owners the owners list of the wallet
      */
-    function getOwners(address _wallet) external view returns (address[] memory);
+    function getOwners() external view returns (address[] memory);
 }
