@@ -2,8 +2,9 @@
 pragma solidity ^0.8.3;
 import "./lib/ERC20Token.sol";
 import "./lib/ERC20.sol";
+import "./interface/IWallet.sol";
 
-contract BaseWallet {
+contract BaseWallet is IWallet{
     // The authorised modules
     mapping(address => bool) public authorised;
     // module executing static calls
@@ -28,7 +29,7 @@ contract BaseWallet {
     event AuthorisedModule(address indexed module, bool value);
     event Received(uint256 indexed value, address indexed sender, bytes data);
 
-    function init(address _owner, address[] calldata _modules) external {
+    function init(address _owner, address[] calldata _modules) external override {
         require(modules == 0, "BW: wallet already initialised");
         require(_modules.length > 0, "BW: empty modules");
         ownersConfigs[address(this)].ownersinfo[_owner].isOwner = true;
@@ -53,12 +54,13 @@ contract BaseWallet {
     function isOwner(address _wallet, address _owner)
         external
         view
+        override
         returns (bool)
     {
         return ownersConfigs[_wallet].ownersinfo[_owner].isOwner;
     }
 
-    function addOwner(address _wallet, address _owner) external {
+    function addOwner(address _wallet, address _owner) external override {
         ownerConfig storage config = ownersConfigs[_wallet];
         uint256 len = config.owners.length;
         require(len < 3, "Error:only can have 3 owners");
@@ -68,7 +70,7 @@ contract BaseWallet {
         config.ownersinfo[_owner].index = uint256(len - 1);
     }
 
-    function deleteOwner(address _wallet, address _owner) external {
+    function deleteOwner(address _wallet, address _owner) external override {
         uint256 len = ownersConfigs[_wallet].owners.length;
         require(len > 1, "Error: the wallet need at least one onwer");
         require(
@@ -89,7 +91,7 @@ contract BaseWallet {
         address _wallet,
         address _oldOwner,
         address _newOwner
-    ) external {
+    ) external override {
         require(
             ownersConfigs[_wallet].ownersinfo[_oldOwner].isOwner,
             "Error: old owner is not owner"
@@ -108,6 +110,7 @@ contract BaseWallet {
     function getOwners(address _wallet)
         external
         view
+        override
         returns (address[] memory)
     {
         uint256 len = ownersConfigs[_wallet].owners.length;
