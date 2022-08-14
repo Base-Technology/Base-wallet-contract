@@ -21,8 +21,10 @@ contract("Test Module", function (accounts) {
 
   describe("test module active wallet", () => {
     it("add owner", async () => {
-      await wallet_1.getOwners({from: module.address});
-      //await wallet_1.getOwners({from: module_addr_2});
+      // await wallet_1.getOwners({from: module.address});
+      // await wallet_1.getOwners({from: module_addr_2});
+      await wallet_1.getOwners({from: wallet_1.address});
+      // 目前被授权的模块：输入的modules数组和钱包本身
     });
     
   });

@@ -36,6 +36,7 @@ contract BaseWallet {
     function init(address _owner, address[] calldata _modules) external {
         require(modules == 0, "BW: wallet already initialised");
         require(_modules.length > 0, "BW: empty modules");
+        // 这边可以修改一下 不需要mappping
         ownersConfigs[address(this)].ownersinfo[_owner].isOwner = true;
         ownersConfigs[address(this)].ownersinfo[_owner].index = 0;
         ownersConfigs[address(this)].owners.push(_owner);
