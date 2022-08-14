@@ -13,15 +13,12 @@ contract BaseWallet is IWallet{
     uint256 public modules;
 
     // mapping(owner)
-    struct ownerConfig {
         address[] owners;
         mapping(address => ownerInfo) ownersinfo;
-    }
     struct ownerInfo {
         bool isOwner;
         uint256 index;
     }
-    mapping(address => ownerConfig) ownersConfigs;
 
     mapping(address => bool) public guardian;
     address public guardianStorage;
@@ -37,10 +34,9 @@ contract BaseWallet is IWallet{
     function init(address _owner, address[] calldata _modules) external {
         require(modules == 0, "BW: wallet already initialised");
         require(_modules.length > 0, "BW: empty modules");
-        // 这边可以修改一下 不需要mappping
-        ownersConfigs[address(this)].ownersinfo[_owner].isOwner = true;
-        ownersConfigs[address(this)].ownersinfo[_owner].index = 0;
-        ownersConfigs[address(this)].owners.push(_owner);
+        ownersinfo[_owner].isOwner = true;
+        ownersinfo[_owner].index = 0;
+        owners.push(_owner);
         modules = _modules.length;
         for (uint256 i = 0; i < _modules.length; i++) {
             require(
@@ -57,73 +53,66 @@ contract BaseWallet is IWallet{
     }
 
     // ********** owner function ********** //
-    function isOwner(address _wallet, address _owner)
+    function isOwner(address _owner)
         external
         view
         override
         returns (bool)
     {
-        return ownersConfigs[_wallet].ownersinfo[_owner].isOwner;
+        return ownersinfo[_owner].isOwner;
     }
 
-    function addOwner(address _wallet, address _owner) external override {
-        ownerConfig storage config = ownersConfigs[_wallet];
-        uint256 len = config.owners.length;
+    function addOwner(address _owner) external override {
+        uint256 len = owners.length;
         require(len < 3, "Error:only can have 3 owners");
-        require(!config.ownersinfo[_owner].isOwner,"Error:owner is already owner");
-        config.ownersinfo[_owner].isOwner = true;
-        config.owners.push(_owner);
-        config.ownersinfo[_owner].index = uint256(len - 1);
+        require(!ownersinfo[_owner].isOwner,"Error:owner is already owner");
+        ownersinfo[_owner].isOwner = true;
+        owners.push(_owner);
+        ownersinfo[_owner].index = uint256(len - 1);
     }
 
-    function deleteOwner(address _wallet, address _owner) external override {
-        uint256 len = ownersConfigs[_wallet].owners.length;
+    function deleteOwner(address _owner) external override {
+        uint256 len = owners.length;
         require(len > 1, "Error: the wallet need at least one onwer");
         require(
-            ownersConfigs[_wallet].ownersinfo[_owner].isOwner,
+            ownersinfo[_owner].isOwner,
             "Error:is not an owner"
         );
-        uint256 index = ownersConfigs[_wallet].ownersinfo[_owner].index;
-        address lastOwner = ownersConfigs[_wallet].owners[len - 1];
+        uint256 index = ownersinfo[_owner].index;
+        address lastOwner = owners[len - 1];
         if (lastOwner != _owner) {
-            ownersConfigs[_wallet].owners[index] = lastOwner;
-            ownersConfigs[_wallet].ownersinfo[lastOwner].index = index;
+            owners[index] = lastOwner;
+            ownersinfo[lastOwner].index = index;
         }
-        ownersConfigs[_wallet].owners.pop();
-        delete ownersConfigs[_wallet].ownersinfo[_owner];
+        owners.pop();
+        delete ownersinfo[_owner];
     }
 
     function changeOwner(
-        address _wallet,
         address _oldOwner,
         address _newOwner
     ) external override {
         require(
-            ownersConfigs[_wallet].ownersinfo[_oldOwner].isOwner,
+            ownersinfo[_oldOwner].isOwner,
             "Error: old owner is not owner"
         );
         require(
-            !ownersConfigs[_wallet].ownersinfo[_newOwner].isOwner,
+            !ownersinfo[_newOwner].isOwner,
             "Error:new owner is already owner"
         );
-        uint256 index = ownersConfigs[_wallet].ownersinfo[_oldOwner].index;
-        ownersConfigs[_wallet].owners[index] = _newOwner;
-        ownersConfigs[_wallet].ownersinfo[_newOwner].isOwner = true;
-        ownersConfigs[_wallet].ownersinfo[_newOwner].index = index;
-        delete ownersConfigs[_wallet].ownersinfo[_oldOwner];
+        uint256 index = ownersinfo[_oldOwner].index;
+        owners[index] = _newOwner;
+        ownersinfo[_newOwner].isOwner = true;
+        ownersinfo[_newOwner].index = index;
+        delete ownersinfo[_oldOwner];
     }
 
     function getOwners()
         external
         view
-        moduleOnly
+        // moduleOnly
         returns (address[] memory)
     {
-        uint256 len = ownersConfigs[address(this)].owners.length;
-        address[] memory owners = new address[](len);
-        for (uint256 i = 0; i < len; i++) {
-            owners[i] = ownersConfigs[address(this)].owners[i];
-        }
         return owners;
     }
 
