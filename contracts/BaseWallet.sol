@@ -4,7 +4,7 @@ import "./lib/ERC20Token.sol";
 import "./lib/ERC20.sol";
 import "./interface/IWallet.sol";
 
-contract BaseWallet is IWallet{
+contract BaseWallet is IWallet {
     // The authorised modules
     mapping(address => bool) public authorised;
     // module executing static calls
@@ -13,8 +13,8 @@ contract BaseWallet is IWallet{
     uint256 public modules;
 
     // mapping(owner)
-        address[] owners;
-        mapping(address => ownerInfo) ownersinfo;
+    address[] owners;
+    mapping(address => ownerInfo) ownersinfo;
     struct ownerInfo {
         bool isOwner;
         uint256 index;
@@ -26,7 +26,7 @@ contract BaseWallet is IWallet{
     event AuthorisedModule(address indexed module, bool value);
     event Received(uint256 indexed value, address indexed sender, bytes data);
 
-    modifier moduleOnly {
+    modifier moduleOnly() {
         require(authorised[msg.sender], "BW: sender not authorized");
         _;
     }
@@ -53,19 +53,14 @@ contract BaseWallet is IWallet{
     }
 
     // ********** owner function ********** //
-    function isOwner(address _owner)
-        external
-        view
-        override
-        returns (bool)
-    {
+    function isOwner(address _owner) external view override returns (bool) {
         return ownersinfo[_owner].isOwner;
     }
 
     function addOwner(address _owner) external override {
         uint256 len = owners.length;
         require(len < 3, "Error:only can have 3 owners");
-        require(!ownersinfo[_owner].isOwner,"Error:owner is already owner");
+        require(!ownersinfo[_owner].isOwner, "Error:owner is already owner");
         ownersinfo[_owner].isOwner = true;
         owners.push(_owner);
         ownersinfo[_owner].index = uint256(len - 1);
@@ -74,10 +69,7 @@ contract BaseWallet is IWallet{
     function deleteOwner(address _owner) external override {
         uint256 len = owners.length;
         require(len > 1, "Error: the wallet need at least one onwer");
-        require(
-            ownersinfo[_owner].isOwner,
-            "Error:is not an owner"
-        );
+        require(ownersinfo[_owner].isOwner, "Error:is not an owner");
         uint256 index = ownersinfo[_owner].index;
         address lastOwner = owners[len - 1];
         if (lastOwner != _owner) {
@@ -88,14 +80,11 @@ contract BaseWallet is IWallet{
         delete ownersinfo[_owner];
     }
 
-    function changeOwner(
-        address _oldOwner,
-        address _newOwner
-    ) external override {
-        require(
-            ownersinfo[_oldOwner].isOwner,
-            "Error: old owner is not owner"
-        );
+    function changeOwner(address _oldOwner, address _newOwner)
+        external
+        override
+    {
+        require(ownersinfo[_oldOwner].isOwner, "Error: old owner is not owner");
         require(
             !ownersinfo[_newOwner].isOwner,
             "Error:new owner is already owner"
@@ -107,12 +96,7 @@ contract BaseWallet is IWallet{
         delete ownersinfo[_oldOwner];
     }
 
-    function getOwners()
-        external
-        view
-        // moduleOnly
-        returns (address[] memory)
-    {
+    function getOwners() external view moduleOnly returns (address[] memory) {
         return owners;
     }
 
