@@ -206,7 +206,7 @@ contract("GuardianManager", function (accounts) {
         let isGuardian = await walletModule.isGuardian(wallet1, guardian_1);
         assert.isFalse(isGuardian)
         await walletModule.cancelGuardianAddition(wallet1, guardian_1, { from: owner_1 })
-        truffleAssert.reverts(confirmGuardianAddition(wallet1, guardian_1), "Error: no pending addition")
+        truffleAssert.reverts(walletModule.confirmGuardianAddition(wallet1, guardian_1), "Error: no pending addition")
       })
     })
 
