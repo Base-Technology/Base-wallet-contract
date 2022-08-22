@@ -7,10 +7,12 @@ import "./BaseModule.sol";
 abstract contract SecurityManager is BaseModule {
     uint256 internal immutable securityPeriod;
     uint256 internal immutable securityWindow;
+    uint256 internal immutable lockPeriod;
 
-    constructor(uint256 _securityPeriod, uint256 _securityWindow) {
+    constructor(uint256 _securityPeriod, uint256 _securityWindow, uint256 _lockPeriod) {
         securityPeriod = _securityPeriod;
         securityWindow = _securityWindow;
+        lockPeriod = _lockPeriod;
     }
 
     struct GuardianManagerConfig {
@@ -18,11 +20,18 @@ abstract contract SecurityManager is BaseModule {
     }
     mapping(address => GuardianManagerConfig) internal guardianConfigs;
 
+
     modifier onlyOwnerOrSelf(address _wallet) {
         bool isSelf = (msg.sender == address(this));
         require(isOwner(_wallet,msg.sender) || isSelf, "Error:must be owner/self");
         _;
     }
+    modifier onlyGuardianOrSelf(address _wallet){
+        require(msg.sender == address(this) || isGuardian(_wallet, msg.sender),"Error:must be guardian/self");
+        _;
+    }
+
+
     function isOwner(address _wallet, address _owner) public view returns(bool) {
         return IWallet(_wallet).isOwner(_owner);
     }
@@ -116,5 +125,29 @@ abstract contract SecurityManager is BaseModule {
         bytes32 id = keccak256(abi.encodePacked(_wallet, _guardian, "revokation"));
         require(guardianConfigs[_wallet].pending[id] > 0, "Error: no pending revokation");
         delete guardianConfigs[_wallet].pending[id];
+    }
+
+    function setLock(address _wallet, uint256 _releaseTime, bytes4 _locker) internal {
+        locks[_wallet].release = uint64(_releaseTime);
+        locks[_wallet].locker = _locker;
+    }
+    function lock(address _wallet) external onlyGuardianOrSelf(_wallet) onlyWhenUnlock(_wallet){
+        setLock(_wallet, block.timestamp + lockPeriod, SecurityManager.lock.selector);
+    }
+    function unlock(address _wallet) external onlyGuardianOrSelf(_wallet) onlyWhenLock(_wallet){
+        require(locks[_wallet].locker == SecurityManager.lock.selector,"Error: is not locker can not unlock");
+        setLock(_wallet, 0, bytes4(0));
+    }
+    function getLock(address _wallet) external view returns(uint64){
+        return _isLocked(_wallet)? locks[_wallet].release : 0;
+    }
+    function isLocked(address _wallet) external view returns(bool){
+        return _isLocked(_wallet);
+    }
+    function getrelease(address _wallet) external view returns(uint64){
+        return locks[_wallet].release;
+    }
+    function gettimestamp()external view returns(uint64){
+        return uint64(block.timestamp);
     }
 }

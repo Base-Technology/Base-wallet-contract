@@ -8,10 +8,11 @@ contract WalletModule is BaseModule, SecurityManager {
     constructor(
         IGuardianStorage _guardianStorage,
         uint256 _securityPeriod,
-        uint256 _securityWindow
+        uint256 _securityWindow,
+        uint256 _lockPeriod
     )
         BaseModule(_guardianStorage)
-        SecurityManager(_securityPeriod,_securityWindow)
+        SecurityManager(_securityPeriod,_securityWindow,_lockPeriod)
     {
 
     }
