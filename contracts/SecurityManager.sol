@@ -8,11 +8,15 @@ abstract contract SecurityManager is BaseModule {
     uint256 internal immutable securityPeriod;
     uint256 internal immutable securityWindow;
     uint256 internal immutable lockPeriod;
+    uint256 internal immutable recoveryPeriod;
 
-    constructor(uint256 _securityPeriod, uint256 _securityWindow, uint256 _lockPeriod) {
+    constructor(uint256 _securityPeriod, uint256 _securityWindow, uint256 _lockPeriod, uint256 _recoveryPeriod) {
+        require(_lockPeriod >= _recoveryPeriod,"Error:insecure lock period");
+        require(_recoveryPeriod >= _securityPeriod + _securityWindow,"Error:insecure security period");
         securityPeriod = _securityPeriod;
         securityWindow = _securityWindow;
         lockPeriod = _lockPeriod;
+        recoveryPeriod = _recoveryPeriod;
     }
 
     struct GuardianManagerConfig {
@@ -20,6 +24,12 @@ abstract contract SecurityManager is BaseModule {
     }
     mapping(address => GuardianManagerConfig) internal guardianConfigs;
 
+    struct RecoveryConfig{
+        address newOwner;
+        uint64 executeTime;
+        uint32 guardianCount;
+    }
+    mapping (address => RecoveryConfig) internal recoveryConfigs;
 
     modifier onlyOwnerOrSelf(address _wallet) {
         bool isSelf = (msg.sender == address(this));
@@ -30,7 +40,18 @@ abstract contract SecurityManager is BaseModule {
         require(msg.sender == address(this) || isGuardian(_wallet, msg.sender),"Error:must be guardian/self");
         _;
     }
-
+    modifier onlyWhenRecovery(address _wallet){
+        require(recoveryConfigs[_wallet].executeTime > 0,"Error:is no recovery");
+        _;
+    }
+    modifier WhenNotRecovery(address _wallet){
+        require(recoveryConfigs[_wallet].executeTime < 0,"Error: is recovery");
+        _;
+    }
+    modifier onlySelf(){
+        require(msg.sender == address(this),"Error:must be self");
+        _;
+    }
 
     function isOwner(address _wallet, address _owner) public view returns(bool) {
         return IWallet(_wallet).isOwner(_owner);
@@ -144,10 +165,24 @@ abstract contract SecurityManager is BaseModule {
     function isLocked(address _wallet) external view returns(bool){
         return _isLocked(_wallet);
     }
-    function getrelease(address _wallet) external view returns(uint64){
-        return locks[_wallet].release;
+    
+    function executeRecovery(address _wallet, address _newOwner) external onlySelf() WhenNotRecovery(_wallet){
+        require(_newOwner != address(0),"Error:newOwner can not be address(0)");
+        require(isOwner(_wallet,_newOwner),"Error:newOwner is already a owner");
+        require(isGuardian(_wallet,_newOwner),"Error:newOwner can not be a guardian");
+        recoveryConfigs[_wallet].newOwner = _newOwner;
+        recoveryConfigs[_wallet].executeTime = uint64(block.timestamp + recoveryPeriod);
+        recoveryConfigs[_wallet].guardianCount = uint32(guardianCount(_wallet));
+        setLock(_wallet, block.timestamp + lockPeriod, SecurityManager.executeRecovery.selector);
     }
-    function gettimestamp()external view returns(uint64){
-        return uint64(block.timestamp);
+    function finalizeRecovery(address _wallet) external onlyWhenRecovery(_wallet){
+        require(recoveryConfigs[_wallet].executeTime < uint64(block.timestamp),"Error:recovery period not end");
+        IWallet(_wallet).setOwnerAfterRecovery(recoveryConfigs[_wallet].newOwner);
+        delete recoveryConfigs[_wallet];
+        setLock(_wallet, 0, bytes4(0));
+    }
+    function cancelRecovery(address _wallet) external onlySelf() onlyWhenRecovery(_wallet){
+        delete recoveryConfigs[_wallet];
+        setLock(_wallet, 0, bytes4(0));
     }
 }

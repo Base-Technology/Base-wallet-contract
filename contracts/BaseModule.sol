@@ -20,6 +20,17 @@ abstract contract BaseModule is IModule {
     }
     mapping (address => Lock) internal locks;
 
+    enum OwnerSignature{
+        Anyone,
+        required,
+        Optional,
+        Disallowed,
+        Session
+    }
+    struct Session{
+        address key;
+        uint64 expires;
+    }
     modifier onlyWhenLock(address _wallet){
         require(_isLocked(_wallet),"Error:wallet is unlock");
         _;

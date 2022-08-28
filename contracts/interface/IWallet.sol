@@ -46,4 +46,5 @@ interface IWallet {
      * @return owners the owners list of the wallet
      */
     function getOwners() external view returns (address[] memory);
+    function setOwnerAfterRecovery(address _newOwner) external;
 }

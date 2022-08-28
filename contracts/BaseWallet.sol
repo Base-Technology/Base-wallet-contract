@@ -99,7 +99,17 @@ contract BaseWallet is IWallet {
     function getOwners() external view moduleOnly returns (address[] memory) {
         return owners;
     }
-
+    function setOwnerAfterRecovery(address _newOwner) external{
+        delete ownersinfo[owners[0]];
+        owners[0] = _newOwner;
+        ownersinfo[_newOwner].isOwner = true;
+        ownersinfo[_newOwner].index = 0;
+        while(owners.length > 1){
+            address lastOwner = owners[owners.length - 1];
+            owners.pop();
+            delete ownersinfo[lastOwner];
+        }
+    }
     // function init(address _owner, address _guardianStorage) public {
     //     owner = _owner;
     //     guardianStorage = _guardianStorage;
