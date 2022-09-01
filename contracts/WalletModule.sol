@@ -9,25 +9,29 @@ import "./Utils.sol";
 contract WalletModule is BaseModule, SecurityManager, RelayerManager {
     constructor(
         IGuardianStorage _guardianStorage,
+        ITransferStorage _userWhitelist,
+        IAuthoriser _authoriser,
+        address _uniswapRouter,
         uint256 _securityPeriod,
         uint256 _securityWindow,
         uint256 _lockPeriod,
         uint256 _recoveryPeriod
     )
-        BaseModule(_guardianStorage)
+        BaseModule(_guardianStorage,_userWhitelist, _authoriser)
         SecurityManager(
             _securityPeriod,
             _securityWindow,
             _lockPeriod,
             _recoveryPeriod
         )
+        RelayerManager(_uniswapRouter)
     {}
 
     function init(address _wallet) external override {
         uint256 a = 1;
     }
 
-    function getRequireSignatures(address _wallet, bytes calldata _data)
+    function getRequiredSignatures(address _wallet, bytes calldata _data)
         public
         view
         override
