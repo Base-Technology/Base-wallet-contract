@@ -6,6 +6,7 @@ import "./BaseModule.sol";
 import "./Utils.sol";
 import "./interface/IWallet.sol";
 import "./SimpleOracle.sol";
+import "./lib/ERC20.sol";
 
 // abstract contract RelayerManager is BaseModule {
 abstract contract RelayerManager is BaseModule , SimpleOracle{
