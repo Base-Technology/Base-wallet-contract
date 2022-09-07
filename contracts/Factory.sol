@@ -5,7 +5,9 @@ pragma solidity >=0.4.22 <0.9.0;
 import "./BaseWallet.sol";
 import "./Proxy.sol";
 import "./Utils.sol";
-contract Factory {
+import "./Managed.sol";
+
+contract Factory is Managed{
 
   address constant internal ETH_TOKEN = address(0);
 
@@ -13,22 +15,14 @@ contract Factory {
   address immutable public guardianStorage;
 
   address public refundAddress;
-  mapping (address => bool) public managers;
-  address public owner;
-
-  modifier onlyOwner {
-        require(msg.sender == owner, "Must be owner");
-        _;
-    }
 
   // *****EVENTS***** //
   event RefundAddressChanged(address addr);
-  event ManagerAdded(address addr);
+
   // indexed 修饰符 将参数作为topic存储
   event WalletCreated(
     address indexed wallet, 
     address indexed owner, 
-    address indexed guardian, 
     address refundToken,
     uint256 refundAmount
     );
@@ -41,24 +35,20 @@ contract Factory {
       walletImplementation = _walletImplementation;
       guardianStorage = _guardianStorage;
       refundAddress = _refundAddress;
-      owner = msg.sender;
     }
 
-  function revokeManager(address) external pure {
+  function revokeManager(address) override external pure {
       revert("WF: Manager can not REVOKE in WF");
     }
 
-  function validateInputs(address _owner, address[] calldata _modules, address _guardian) internal pure {
+  function validateInputs(address _owner, address[] calldata _modules) internal pure {
         require(_owner != address(0), "WF: empty owner address");
-        require(_owner != _guardian, "WF: owner cannot be guardian");
         require(_modules.length > 0, "WF: empty modules");
-        require(_guardian != (address(0)), "WF: empty guardian");        
     }
 
   function createCounterfactualWallet(
       address _owner,
       address[] calldata _modules,
-      address _guardian,
       address _refundToken,
       bytes20 _salt,
       bytes calldata _ownerSignature,
@@ -68,11 +58,11 @@ contract Factory {
     external
     returns ( address _wallet )
     {
-      validateInputs(_owner, _modules, _guardian);
-      bytes32 newsalt = newSalt(_salt, _owner, _modules, _guardian);
+      validateInputs(_owner, _modules);
+      bytes32 newsalt = newSalt(_salt, _owner, _modules);
       address payable wallet = payable(new Proxy{salt: newsalt}(walletImplementation));
       validateAuthorisedCreation(wallet, _managerSignature);
-      configureWallet(BaseWallet(wallet), _owner, _modules, _guardian);
+      configureWallet(BaseWallet(wallet), _owner, _modules);
 
       if (_refundAmount > 0 && _ownerSignature.length == 65) {
               validateAndRefund(wallet, _owner, _refundAmount, _refundToken, _ownerSignature);
@@ -81,23 +71,22 @@ contract Factory {
           BaseWallet(wallet).authoriseModule(address(this), false);
 
           // emit event
-          emit WalletCreated(wallet, _owner, _guardian, _refundToken, _refundAmount);
+          emit WalletCreated(wallet, _owner,_refundToken, _refundAmount);
 
           return wallet;
     }
     // Gets the address of a counterfactual wallet with a first default guardian.
-  function getAddressFromCfWallet(
+  function getAddressForCounterfactualWallet(
       address _owner,
       address[] calldata _modules,
-      address _guardian,
       bytes20 _salt
     ) 
     external
     view  
     returns ( address _wallet ) {
-      validateInputs(_owner, _modules, _guardian);
+      validateInputs(_owner, _modules);
       // 几次加密？？
-      bytes32 newsalt = newSalt(_salt, _owner, _modules, _guardian);
+      bytes32 newsalt = newSalt(_salt, _owner, _modules);
       bytes memory code = abi.encodePacked(type(Proxy).creationCode, uint256(uint160(walletImplementation)));
       bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), address(this), newsalt, keccak256(code)));
       _wallet = address(uint160(uint256(hash)));
@@ -116,8 +105,7 @@ contract Factory {
   function configureWallet(
       BaseWallet _wallet, 
       address _owner, 
-      address[] calldata _modules, 
-      address _guardian
+      address[] calldata _modules 
     ) 
     internal 
     {
@@ -129,13 +117,10 @@ contract Factory {
       }
       // initialise the wallet with the owner and the extended modules
       _wallet.init(_owner, extendedModules);
-      // add the first guardian
-      // IGuardianStorage(guardianStorage).addGuardian(address(_wallet), _guardian);
-      _wallet.addGuardian(address(_wallet), _guardian);
     }
 
-  function newSalt(bytes20 _salt, address _owner, address[] calldata _modules, address _guardian) internal pure returns (bytes32) {
-      return keccak256(abi.encodePacked(keccak256(abi.encodePacked(_owner, _modules, _guardian)), _salt));
+  function newSalt(bytes20 _salt, address _owner, address[] calldata _modules) internal pure returns (bytes32) {
+      return keccak256(abi.encodePacked(keccak256(abi.encodePacked(_owner, _modules)), _salt));
     }
 
 
@@ -198,14 +183,6 @@ contract Factory {
             }
         }
     }
-  function addManager(address _manager) external onlyOwner {
-      require(_manager != address(0), "M: Address must not be null");
-      if (managers[_manager] == false) {
-          managers[_manager] = true;
-          emit ManagerAdded(_manager);
-      }
-  }
-
 }
 
 
