@@ -6,6 +6,7 @@ import "./SecurityManager.sol";
 import "./RelayerManager.sol";
 import "./Utils.sol";
 
+// contract WalletModule is BaseModule, SecurityManager{
 contract WalletModule is BaseModule, SecurityManager, RelayerManager {
     constructor(
         IGuardianStorage _guardianStorage,
@@ -25,6 +26,7 @@ contract WalletModule is BaseModule, SecurityManager, RelayerManager {
             _recoveryPeriod
         )
         RelayerManager(_uniswapRouter)
+        // RelayerManager()
     {}
 
     function init(address _wallet) external override {
@@ -57,17 +59,20 @@ contract WalletModule is BaseModule, SecurityManager, RelayerManager {
             return (numberOfSignaturesRequired, OwnerSignature.Optional);
         }
         if (methodId == SecurityManager.finalizeRecovery.selector) {
-            return (1, OwnerSignature.Anyone);
+            return (0, OwnerSignature.Anyone);
+        }
+        if (methodId == SecurityManager.lock.selector || methodId == SecurityManager.unlock.selector) {
+            return (1, OwnerSignature.Disallowed);
         }
     }
 
-    function numberOfGuardiansRequired(address _wallet, uint256 method)
+    function numberOfGuardiansRequired(address _wallet, uint256 _method)
         internal
         view
         returns (uint256)
     {
-        uint256 count = guardianCount(_wallet);
-        if (method == 2) {
+        uint256 count = guardianStorage.guardianCount(_wallet);
+        if (_method == 2) {
             count = count + 1;
         }
         uint256 req = count / 2;

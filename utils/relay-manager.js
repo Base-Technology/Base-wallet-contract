@@ -41,6 +41,7 @@ class RelayManager {
       _refundAddress,
     );
 
+    console.log("---> _module.contract.methods.execute")
     const executeData = _module.contract.methods.execute(
       _wallet.address,
       methodData,
@@ -62,7 +63,7 @@ class RelayManager {
     if (process.env.COVERAGE) {
       gas += 50_000;
     }
-
+    console.log("---> _module.execute")
     const tx = await _module.execute(
       _wallet.address,
       methodData,
@@ -74,7 +75,7 @@ class RelayManager {
       _refundAddress,
       { gas, gasPrice, from: relayerAccount },
     );
-
+    console.log('tx : ',tx)
     return tx.receipt;
   }
   

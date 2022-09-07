@@ -5,6 +5,7 @@ import "./interface/IModule.sol";
 import "./interface/IGuardianStorage.sol";
 import "./interface/ITransferStorage.sol";
 import "./interface/IAuthoriser.sol";
+import "./lib/ERC20.sol";
 
 abstract contract BaseModule is IModule {
     address constant internal ETH_TOKEN = address(0);

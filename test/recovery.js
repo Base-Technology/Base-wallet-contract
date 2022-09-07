@@ -5,14 +5,16 @@ const RelayManager = require("../utils/relay-manager.js");
 const ethers = require("ethers");
 const BN = require("bn.js");
 const { isBN } = require("bn.js");
+
 const UniswapV2Router01 = artifacts.require("DummyUniV2Router");
 
-
 const BaseWallet = artifacts.require('BaseWallet');
+const Proxy = artifacts.require("Proxy");
 const GuardianStorage = artifacts.require('GuardianStorage');
 const TransferStorage = artifacts.require("TransferStorage");
 const Authoriser = artifacts.require("Authoriser");
 const WalletModule = artifacts.require('WalletModule');
+
 
 const SECURITY_PERIOD = 24;
 const SECURITY_WINDOW = 12;
@@ -22,7 +24,7 @@ const RECOVERY_PERIOD = 36;
 const ZERO_ADDRESS = ethers.constants.AddressZero;
 
 const WRONG_SIGNATURE_NUMBER_REVERT_MSG = "Wrong number of signatures";
-const INVALID_SIGNATURES_REVERT_MSG = "Erro:Invalid signatures";
+const INVALID_SIGNATURES_REVERT_MSG = "Error:Invalid signatures";
 
 contract("recovery", function (accounts) {
     const owner = accounts[1];
@@ -46,43 +48,58 @@ contract("recovery", function (accounts) {
     let modules;
     let walletModule;
     let incorrectGuardian
+    let walletImplementation
 
     before(async () => {
         modules = [module];
-
-        wallet_1 = await BaseWallet.new();
-        wallet1 = wallet_1.address;
-        wallet_2 = await BaseWallet.new();
-        wallet2 = wallet_2.address;
 
         guardianStorage = await GuardianStorage.new();
         transferStorage = await TransferStorage.new();
         authoriser = await Authoriser.new(0);
 
         const uniswapRouter = await UniswapV2Router01.new();
-        console.log(4)
-
-        await wallet_1.send(new BN("1000000000000000000"));
 
         walletModule = await WalletModule.new(guardianStorage.address, transferStorage.address, authoriser.address, uniswapRouter.address, SECURITY_PERIOD, SECURITY_WINDOW, LOCK_PERIOD, RECOVERY_PERIOD);
 
-        await wallet_1.init(owner, modules);
-        await wallet_2.init(owner, modules);
+        await authoriser.addDapp(0, relayer, ZERO_ADDRESS)
 
         manager = new RelayManager(guardianStorage.address, ZERO_ADDRESS);
+        walletImplementation = await BaseWallet.new()
     });
+
+    beforeEach(async () => {
+        wallet_1 = await BaseWallet.new();
+        wallet1 = wallet_1.address;
+        await wallet_1.init(owner, modules);
+    })
     async function addGuardians(guardians) {
-        for (const guardian of guardians)
+        for (const guardian of guardians) {
             await guardianStorage.addGuardian(wallet1, guardian)
+        }
+    }
+    async function createSmartContractGuardians(guardians){
+        const wallets = []
+        for(let guardian of guardians){
+            const proxy = await Proxy.new(walletImplementation.address)
+            const guardianWallet = await BaseWallet.at(proxy.address);
+            await guardianWallet.init(guardian, [walletModule.address])
+            wallets.push(guardianWallet.address)
+        }
+        return wallets
     }
     function testExecuteRecovery(guardians) {
         it("execute recovery with majority guardians", async () => {
-            console.log(guardians)
             let isOwner = await walletModule.isOwner(wallet1, owner);
             assert.isTrue(isOwner)
             isOwner = await walletModule.isOwner(wallet1, owner_2);
             assert.isFalse(isOwner)
+
+            console.log("guardians")
+            console.log(await walletModule.getGuardians(wallet1))
+
             const majority = guardians.slice(0, Math.ceil(guardians.length / 2))
+            console.log('majority')
+            console.log(majority)
             await manager.relay(walletModule, "executeRecovery", [wallet1, owner_2], wallet_1, utils.sortWalletByAddress(majority))
 
             const isLocked = await walletModule.isLocked(wallet1)
@@ -101,52 +118,130 @@ contract("recovery", function (accounts) {
             isOwner = await walletModule.isOwner(wallet1, owner_2);
             assert.isFalse(isOwner)
         })
-        it("execute recovery with owner", async () => {
-            let isOwner = await walletModule.isOwner(wallet1, owner);
-            assert.isTrue(isOwner)
-            isOwner = await walletModule.isOwner(wallet1, owner_2);
-            assert.isFalse(isOwner)
+        // it("execute recovery with owner", async () => {
+        //     let isOwner = await walletModule.isOwner(wallet1, owner);
+        //     assert.isTrue(isOwner)
+        //     isOwner = await walletModule.isOwner(wallet1, owner_2);
+        //     assert.isFalse(isOwner)
 
-            const expectedRevertMsg = guardians.length >= 3 ? WRONG_SIGNATURE_NUMBER_REVERT_MSG : INVALID_SIGNATURES_REVERT_MSG;
-            await truffleAssert.reverts(
-                manager.relay(
-                    walletModule,
-                    "executeRecovery",
-                    [wallet1, owner_2],
-                    wallet_1,
-                    [owner],
-                ), expectedRevertMsg,
-            );
+        //     const expectedRevertMsg = guardians.length >= 3 ? WRONG_SIGNATURE_NUMBER_REVERT_MSG : INVALID_SIGNATURES_REVERT_MSG;
+        //     console.log(expectedRevertMsg)
+        //     await truffleAssert.reverts(
+        //         manager.relay(
+        //             walletModule,
+        //             "executeRecovery",
+        //             [wallet1, owner_2],
+        //             wallet_1,
+        //             [owner],
+        //         ), expectedRevertMsg,
+        //     );
 
-            isOwner = await walletModule.isOwner(wallet1, owner);
-            assert.isTrue(isOwner)
-            isOwner = await walletModule.isOwner(wallet1, owner_2);
-            assert.isFalse(isOwner)
-        })
+        //     isOwner = await walletModule.isOwner(wallet1, owner);
+        //     assert.isTrue(isOwner)
+        //     isOwner = await walletModule.isOwner(wallet1, owner_2);
+        //     assert.isFalse(isOwner)
+        // })
+        // it("execute with majority guardians + owner",async()=>{
+        //     const majority = guardians.slice(0,Math.ceil(guardians.length/2))
+        //     await truffleAssert.reverts(manager.relay(walletModule,"executeRecovery",[wallet1,owner_2],wallet_1,[owner,...utils.sortWalletByAddress(majority)]),INVALID_SIGNATURES_REVERT_MSG)
+
+        //     const isLocked = await walletModule.isLocked(wallet1)
+        //     assert.isFalse(isLocked)
+        // })
+        // it("execute with minority of guardians",async()=>{
+        //     const minority = guardians.slice(0,Math.ceil(guardians.length/2)-1)
+        //     await truffleAssert.reverts(manager.relay(walletModule,"executeRecovery",[wallet1,owner_2],wallet_1,[owner,...utils.sortWalletByAddress(minority)]),WRONG_SIGNATURE_NUMBER_REVERT_MSG)
+
+        //     const isLocked = await walletModule.isLocked(wallet1)
+        //     assert.isFalse(isLocked)
+        // })
     }
     describe("Execute Recovery", () => {
-        it("execute recovery with no guardians", async () => {
+        // it("execute recovery with no guardians", async () => {
 
-            let isOwner = await walletModule.isOwner(wallet1, owner);
-            assert.isTrue(isOwner)
-            isOwner = await walletModule.isOwner(wallet1, owner_2);
-            assert.isFalse(isOwner)
+        //     let isOwner = await walletModule.isOwner(wallet1, owner);
+        //     assert.isTrue(isOwner)
+        //     isOwner = await walletModule.isOwner(wallet1, owner_2);
+        //     assert.isFalse(isOwner)
 
-            await truffleAssert.reverts(manager.relay(walletModule, "executeRecovery", [wallet1, owner_2], wallet_1, []), "Error: no guardians on wallet")
+        //     await truffleAssert.reverts(manager.relay(walletModule, "executeRecovery", [wallet1, owner_2], wallet_1, []), "Error: no guardians on wallet")
 
-            const isLocked = await walletModule.isLocked(wallet1)
-            assert.isFalse(isLocked)
+        //     const isLocked = await walletModule.isLocked(wallet1)
+        //     assert.isFalse(isLocked)
 
-            isOwner = await walletModule.isOwner(wallet1, owner);
-            assert.isTrue(isOwner)
-            isOwner = await walletModule.isOwner(wallet1, owner_2);
-            assert.isFalse(isOwner)
-        })
+        //     isOwner = await walletModule.isOwner(wallet1, owner);
+        //     assert.isTrue(isOwner)
+        //     isOwner = await walletModule.isOwner(wallet1, owner_2);
+        //     assert.isFalse(isOwner)
+        // })
         describe("execute with 2 guardians", () => {
             beforeEach(async () => {
                 await addGuardians([guardian_1, guardian_2]);
             })
             testExecuteRecovery([guardian_1, guardian_2])
         })
+        // describe('execute with 3guardians', async() => {
+        //     beforeEach(async () => {
+        //         await addGuardians([guardian_1, guardian_2,guardian_3]);
+        //     })
+        //     testExecuteRecovery([guardian_1, guardian_2,guardian_3])
+        //     it("execute recovery with duplicate guardian", async () => {
+        //         await truffleAssert.reverts(
+        //             manager.relay(
+        //                 walletModule,
+        //                 "executeRecovery",
+        //                 [wallet1,owner_2],
+        //                 wallet_1,
+        //                 utils.sortWalletByAddress([guardian_1,guardian_1]),
+        //             ),INVALID_SIGNATURES_REVERT_MSG
+        //         )
+        //     })
+        // })
+        // describe('execute with 2 samart contrat guardians', () => {
+        //     let guardians
+        //     beforeEach(async() => {
+        //         guardians = await createSmartContractGuardians([guardian_1,guardian_2])
+        //         await addGuardians(guardians)
+        //     })
+        //     testExecuteRecovery([guardian_1,guardian_2])
+        // })
+        // describe('execute with 2 samart contrat guardians', () => {
+        //     let guardians
+        //     beforeEach(async() => {
+        //         guardians = await createSmartContractGuardians([guardian_1,guardian_2,guardian_3])
+        //         await addGuardians(guardians)
+        //     })
+        //     testExecuteRecovery([guardian_1,guardian_2,guardian_3])
+        // })
+        // describe("Safety Checks", () => {
+        //     it("execute with empty newOwner", async () =>{
+        //         await addGuardians([guardian_1])
+        //         const txReceipt = await manager.relay(walletModule, "executeRecovery",[wallet1, ethers.constants.AddressZero], wallet_1, [guardian_1]);
+        //         const { success, error } = utils.parseRelayReceipt(txReceipt);
+        //         assert.isFalse(success);
+        //         assert.equal(error);
+        //     })
+        //     it("execute when newOwner is guardian", async () => {
+        //         await addGuardians([guardian_1])
+        //         const txReceipt = await manager.relay(walletModule, "executeRecovery",
+        //         [wallet1, guardian_1], wallet_1, [guardian_1]);
+        //         const { success, error } = utils.parseRelayReceipt(txReceipt);
+        //         assert.isFalse(success);
+        //         assert.equal(error);
+        //       });
+        
+        //       it("should not be able to call executeRecovery if already in the process of Recovery", async () => {
+        //         await addGuardians([guardian_1])
+
+        //         await manager.relay(walletModule, "executeRecovery",
+        //           [wallet1, owner_2], wallet_1, utils.sortWalletByAddress([guardian_1]));
+        
+        //         const txReceipt = await manager.relay(walletModule, "executeRecovery",
+        //           [wallet1, ethers.constants.AddressZero], wallet_1, [guardian_1]);
+        //         const { success, error } = utils.parseRelayReceipt(txReceipt);
+        //         assert.isFalse(success);
+        //         assert.equal(error);
+        //       });
+        // })
     })
 });

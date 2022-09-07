@@ -9,7 +9,7 @@ import "./SimpleOracle.sol";
 import "./lib/ERC20.sol";
 
 // abstract contract RelayerManager is BaseModule {
-abstract contract RelayerManager is BaseModule , SimpleOracle{
+abstract contract RelayerManager is BaseModule, SimpleOracle {
     uint256 internal constant BLOCKBOUND = 10000;
 
     struct StackExtension {
@@ -24,6 +24,19 @@ abstract contract RelayerManager is BaseModule , SimpleOracle{
         mapping(bytes32 => bool) executedTx;
     }
     mapping(address => RelayerConfig) internal relayer;
+
+    event TransactionExecuted(
+        address indexed wallet,
+        bool indexed success,
+        bytes returnData,
+        bytes32 signedHash
+    );
+    event Refund(
+        address indexed wallet,
+        address indexed refundAddress,
+        address refundToken,
+        uint256 refundAmount
+    );
 
     // constructor(address _uniswapRouter) {}
     constructor(address _uniswapRouter) SimpleOracle(_uniswapRouter) {}
@@ -116,6 +129,12 @@ abstract contract RelayerManager is BaseModule , SimpleOracle{
             stack.requiredSignatures,
             stack.ownerSignatureRequirement
         );
+        emit TransactionExecuted(
+            _wallet,
+            stack.success,
+            stack.returnData,
+            stack.signHash
+        );
         return stack.success;
     }
 
@@ -174,11 +193,15 @@ abstract contract RelayerManager is BaseModule , SimpleOracle{
             (_ownerSignatureRequirement == OwnerSignature.Required ||
                 _ownerSignatureRequirement == OwnerSignature.Session)
         ) {
-            if (_nonce <= relayer[_wallet].nonce) return false;
+            if (_nonce <= relayer[_wallet].nonce) {
+                return false;
+            }
             uint256 nonceBlock = (_nonce &
                 0xffffffffffffffffffffffffffffffff00000000000000000000000000000000) >>
                 128;
-            if (nonceBlock > block.number + BLOCKBOUND) return false;
+            if (nonceBlock > block.number + BLOCKBOUND) {
+                return false;
+            }
             relayer[_wallet].nonce = _nonce;
             return true;
         } else {
@@ -206,7 +229,9 @@ abstract contract RelayerManager is BaseModule , SimpleOracle{
         bytes memory _signatures,
         OwnerSignature _option
     ) internal view returns (bool) {
-        if (_signatures.length == 0) return true;
+        if (_signatures.length == 0) {
+            return true;
+        }
 
         address lastSigner = address(0);
         address[] memory guardians;
@@ -222,47 +247,92 @@ abstract contract RelayerManager is BaseModule , SimpleOracle{
 
             if (i == 0) {
                 if (_option == OwnerSignature.Required) {
-                    if (IWallet(_wallet).isOwner(signer)) continue;
+                    require(IWallet(_wallet).isOwner(signer),"_option == OwnerSignature.Required && is not owner");
+                    if (IWallet(_wallet).isOwner(signer)) {
+                        continue;
+                    }
                     return false;
                 } else if (_option == OwnerSignature.Optional) {
-                    if (IWallet(_wallet).isOwner(signer)) continue;
+                    require(IWallet(_wallet).isOwner(signer),"_option == OwnerSignature.Optional && is not owner");
+                    if (IWallet(_wallet).isOwner(signer)) {
+                        continue;
+                    }
                 }
             }
-            if (signer <= lastSigner) return false;
+            require(signer > lastSigner,"! signer <= lastSigner");
+            if (signer <= lastSigner) {
+                return false;
+            }
             lastSigner = signer;
             (isGuardian, guardians) = Utils.isGuardianOrGuardianSigner(
                 guardians,
                 signer
             );
-            if (!isGuardian) return false;
+            require(isGuardian, 'is not guardian');
+            if (!isGuardian) {
+                return false;
+            }
         }
         return true;
     }
 
-    function refund(address _wallet, uint _startGas, uint _gasPrice, uint _gasLimit, address _refundToken, address _refundAddress, uint256 _requiredSignatures, OwnerSignature _option) internal {
-        if(_gasPrice > 0 && (_option == OwnerSignature.Required || _option == OwnerSignature.Session)){
+    function refund(
+        address _wallet,
+        uint _startGas,
+        uint _gasPrice,
+        uint _gasLimit,
+        address _refundToken,
+        address _refundAddress,
+        uint256 _requiredSignatures,
+        OwnerSignature _option
+    ) internal {
+        if (
+            _gasPrice > 0 &&
+            (_option == OwnerSignature.Required ||
+                _option == OwnerSignature.Session)
+        ) {
             address refundAddress = _refundAddress == address(0) ? msg.sender : _refundAddress;
-            if(_requiredSignatures == 1 && _option == OwnerSignature.Required){
-                if(!authoriser.isAuthorised(_wallet, refundAddress, address(0), EMPTY_BYTES)){
+            if (_requiredSignatures == 1 && _option == OwnerSignature.Required) {
+                if (!authoriser.isAuthorised(_wallet, refundAddress, address(0), EMPTY_BYTES)) {
                     uint whitelistAfter = userWhitelist.getWhitelist(_wallet, refundAddress);
-                    require(whitelistAfter > 0 && whitelistAfter < block.timestamp,"Error:refund not authorised"); 
+                    require(
+                        whitelistAfter > 0 && whitelistAfter < block.timestamp,
+                        "Error:refund not authorised"
+                    );
                 }
             }
             uint256 refundAmount;
-            if(_refundToken == ETH_TOKEN){
+            if (_refundToken == ETH_TOKEN) {
                 uint256 gasConsumed = _startGas - gasleft() + 23000;
-                refundAmount = Math.min(gasConsumed,_gasLimit) * Math.min(_gasPrice, tx.gasprice);
+                refundAmount =
+                    Math.min(gasConsumed, _gasLimit) *
+                    Math.min(_gasPrice, tx.gasprice);
                 invokeWallet(_wallet, refundAddress, refundAmount, EMPTY_BYTES);
             } else {
                 uint256 gasConsumed = _startGas - gasleft() + 37500;
                 uint256 tokenGasPrice = inToken(_refundToken, tx.gasprice);
-                refundAmount = Math.min(gasConsumed, _gasLimit) * Math.min(_gasPrice, tokenGasPrice);
-                bytes memory methodData = abi.encodeWithSelector(ERC20.transfer.selector, refundAddress, refundAmount);
-                bytes memory transferSuccessBytes = invokeWallet(_wallet, _refundToken, 0, methodData);
-                if (transferSuccessBytes.length > 0){
-                    require(abi.decode(transferSuccessBytes, (bool)),"Error: Refund transfer failed");
+                refundAmount =
+                    Math.min(gasConsumed, _gasLimit) *
+                    Math.min(_gasPrice, tokenGasPrice);
+                bytes memory methodData = abi.encodeWithSelector(
+                    ERC20.transfer.selector,
+                    refundAddress,
+                    refundAmount
+                );
+                bytes memory transferSuccessBytes = invokeWallet(
+                    _wallet,
+                    _refundToken,
+                    0,
+                    methodData
+                );
+                if (transferSuccessBytes.length > 0) {
+                    require(
+                        abi.decode(transferSuccessBytes, (bool)),
+                        "Error: Refund transfer failed"
+                    );
                 }
             }
+            emit Refund(_wallet, refundAddress, _refundToken, refundAmount);
         }
     }
 }

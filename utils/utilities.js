@@ -1,7 +1,16 @@
 
 const ethers = require("ethers");
+const BN = require("bn.js");
+const Factory = artifacts.require("Factory");
+
+
+const ETH_TOKEN = ethers.constants.AddressZero;
+const ZERO_BYTES = "0x";
+
+
 
 const utilities = {
+    ETH_TOKEN,
     increaseTime: async (seconds) => {
         const client = await utilities.web3GetClient();
         if (!client.includes("TestRPC")) {
@@ -56,7 +65,6 @@ const utilities = {
     signOffchain: async (signers, from, value, data, chainId, nonce, gasPrice, gasLimit, refundToken, refundAddress) => {
         console.log("signOffchain")
         const messageHash = utilities.getMessageHash(from, value, data, chainId, nonce, gasPrice, gasLimit, refundToken, refundAddress);
-        console.log(messageHash)
         const signatures = await Promise.all(
             signers.map(async (signer) => {
                 const sig = await utilities.signMessage(messageHash, signer);
@@ -68,7 +76,6 @@ const utilities = {
         return joinedSignatures;
     },
     getMessageHash: (from, value, data, chainId, nonce, gasPrice, gasLimit, refundToken, refundAddress) => {
-        
         const message = `0x${[
             "0x19",
             "0x00",
@@ -93,6 +100,50 @@ const utilities = {
         if (bn1.gt(bn2)) return 1;
         return 0;
     }),
+    signMessage: async (message, signer) => {
+        console.log('signMessage')
+        const sig = await web3.eth.sign(message, signer);
+        let v = parseInt(sig.substring(130, 132), 16);
+        if (v < 27) v += 27;
+        const normalizedSig = `${sig.substring(0, 130)}${v.toString(16)}`;
+        return normalizedSig;
+    },
+    createWallet: async (factoryAddress, owner, modules) => {
+        const salt = utilities.generateSaltValue();
+        const managerSig = "0x";
+        const factory = await Factory.at(factoryAddress);
+
+        const tx = await factory.createCounterfactualWallet(
+            owner, modules, salt, 0, ethers.constants.AddressZero, ZERO_BYTES, managerSig);
+
+        const event = await utilities.getEvent(tx.receipt, factory, "WalletCreated");
+        return event.args.wallet;
+    },
+    generateSaltValue: () => ethers.utils.hexZeroPad(ethers.BigNumber.from(ethers.utils.randomBytes(20)).toHexString(), 20),
+    getEvent: async (txReceipt, emitter, eventName) => {
+        const receipt = await web3.eth.getTransactionReceipt(txReceipt.transactionHash);
+        const logs = await utilities.decodeLogs(receipt.logs, emitter, eventName);
+        const event = logs.find((e) => e.event === eventName);
+        return event;
+    },
+    parseRelayReceipt: (txReceipt) => {
+        const { args } = txReceipt.logs.find((e) => e.event === "TransactionExecuted");
+    
+        let errorBytes;
+        let error;
+        if (!args.success && args.returnData) {
+          if (args.returnData.startsWith("0x08c379a0")) {
+            // Remove the encoded error signatures 08c379a0
+            const noErrorSelector = `0x${args.returnData.slice(10)}`;
+            const errorBytesArray = ethers.utils.defaultAbiCoder.decode(["bytes"], noErrorSelector);
+            errorBytes = errorBytesArray[0]; // eslint-disable-line prefer-destructuring
+          } else {
+            errorBytes = args.returnData; console.log(errorBytes);
+          }
+          error = ethers.utils.toUtf8String(errorBytes);
+        }
+        return { success: args.success, error };
+      },
 };
 
 module.exports = utilities;

@@ -168,8 +168,8 @@ abstract contract SecurityManager is BaseModule {
     
     function executeRecovery(address _wallet, address _newOwner) external onlySelf() WhenNotRecovery(_wallet){
         require(_newOwner != address(0),"Error:newOwner can not be address(0)");
-        require(isOwner(_wallet,_newOwner),"Error:newOwner is already a owner");
-        require(isGuardian(_wallet,_newOwner),"Error:newOwner can not be a guardian");
+        require(!isOwner(_wallet,_newOwner),"Error:newOwner is already a owner");
+        require(!isGuardian(_wallet,_newOwner),"Error:newOwner can not be a guardian");
         recoveryConfigs[_wallet].newOwner = _newOwner;
         recoveryConfigs[_wallet].executeTime = uint64(block.timestamp + recoveryPeriod);
         recoveryConfigs[_wallet].guardianCount = uint32(guardianCount(_wallet));
@@ -184,5 +184,8 @@ abstract contract SecurityManager is BaseModule {
     function cancelRecovery(address _wallet) external onlySelf() onlyWhenRecovery(_wallet){
         delete recoveryConfigs[_wallet];
         setLock(_wallet, 0, bytes4(0));
+    }
+    function getRecovery(address _wallet) external view returns(address _newOwner, uint64 _executeTime, uint32 _guardianCount){
+        return(recoveryConfigs[_wallet].newOwner, recoveryConfigs[_wallet].executeTime, recoveryConfigs[_wallet].guardianCount);
     }
 }

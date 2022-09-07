@@ -52,4 +52,11 @@ contract Authoriser is IAuthoriser{
         }
         return true;
     }
+
+    function addDapp(uint8 _registryId, address _dapp, address _filter) external {
+        require(authorisations[_registryId][_dapp] == bytes32(0), "DR: dapp already added");
+        uint validAfter = block.timestamp + timelockPeriod;
+        // Store the new authorisation as {filter:160}{validAfter:64}.
+        authorisations[_registryId][_dapp] = bytes32((uint(uint160(_filter)) << 64) | validAfter);
+    }
 }
