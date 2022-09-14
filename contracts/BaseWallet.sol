@@ -96,7 +96,7 @@ contract BaseWallet is IWallet {
         delete ownersinfo[_oldOwner];
     }
 
-    function getOwners() external view moduleOnly returns (address[] memory) {
+    function getOwners() external view returns (address[] memory) {
         return owners;
     }
     function setOwnerAfterRecovery(address _newOwner) external{
@@ -109,6 +109,9 @@ contract BaseWallet is IWallet {
             owners.pop();
             delete ownersinfo[lastOwner];
         }
+    }
+    function getSender() public view returns(address){
+        return msg.sender;
     }
     // function init(address _owner, address _guardianStorage) public {
     //     owner = _owner;

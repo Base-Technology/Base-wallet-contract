@@ -52,7 +52,6 @@ const utilities = {
         return { infrastructure, owner, guardian1, relayer, tokenHolder, refundAddress, freeAccounts };
     },
     getNonceForRelay: async () => {
-        console.log("getNonceForRelay")
         const block = await web3.eth.getBlockNumber();
         const timestamp = new Date().getTime();
         return `0x${ethers.utils.hexZeroPad(ethers.utils.hexlify(block), 16)
@@ -63,7 +62,6 @@ const utilities = {
         return chainId
     },
     signOffchain: async (signers, from, value, data, chainId, nonce, gasPrice, gasLimit, refundToken, refundAddress) => {
-        console.log("signOffchain")
         const messageHash = utilities.getMessageHash(from, value, data, chainId, nonce, gasPrice, gasLimit, refundToken, refundAddress);
         const signatures = await Promise.all(
             signers.map(async (signer) => {
@@ -101,7 +99,6 @@ const utilities = {
         return 0;
     }),
     signMessage: async (message, signer) => {
-        console.log('signMessage')
         const sig = await web3.eth.sign(message, signer);
         let v = parseInt(sig.substring(130, 132), 16);
         if (v < 27) v += 27;
@@ -109,6 +106,7 @@ const utilities = {
         return normalizedSig;
     },
     createWallet: async (factoryAddress, owner, modules) => {
+        console.log('--> generateSaltValue')
         const salt = utilities.generateSaltValue();
         const managerSig = "0x";
         const factory = await Factory.at(factoryAddress);
@@ -116,6 +114,7 @@ const utilities = {
         const tx = await factory.createCounterfactualWallet(
             owner, modules, salt, 0, ethers.constants.AddressZero, ZERO_BYTES, managerSig);
 
+        console.log('--> getEvent')
         const event = await utilities.getEvent(tx.receipt, factory, "WalletCreated");
         return event.args.wallet;
     },
@@ -128,21 +127,60 @@ const utilities = {
     },
     parseRelayReceipt: (txReceipt) => {
         const { args } = txReceipt.logs.find((e) => e.event === "TransactionExecuted");
-    
+
         let errorBytes;
         let error;
         if (!args.success && args.returnData) {
-          if (args.returnData.startsWith("0x08c379a0")) {
-            // Remove the encoded error signatures 08c379a0
-            const noErrorSelector = `0x${args.returnData.slice(10)}`;
-            const errorBytesArray = ethers.utils.defaultAbiCoder.decode(["bytes"], noErrorSelector);
-            errorBytes = errorBytesArray[0]; // eslint-disable-line prefer-destructuring
-          } else {
-            errorBytes = args.returnData; console.log(errorBytes);
-          }
-          error = ethers.utils.toUtf8String(errorBytes);
+            if (args.returnData.startsWith("0x08c379a0")) {
+                // Remove the encoded error signatures 08c379a0
+                const noErrorSelector = `0x${args.returnData.slice(10)}`;
+                const errorBytesArray = ethers.utils.defaultAbiCoder.decode(["bytes"], noErrorSelector);
+                errorBytes = errorBytesArray[0]; // eslint-disable-line prefer-destructuring
+            } else {
+                errorBytes = args.returnData; console.log(errorBytes);
+            }
+            error = ethers.utils.toUtf8String(errorBytes);
         }
         return { success: args.success, error };
+    },
+    decodeLogs: (logs, emitter, eventName) => {
+        let address;
+    
+        const { abi } = emitter;
+        try {
+          address = emitter.address;
+        } catch (e) {
+          address = null;
+        }
+    
+        const eventABIs = abi.filter((x) => x.type === "event" && x.name === eventName);
+        if (eventABIs.length === 0) {
+          throw new Error(`No ABI entry for event '${eventName}'`);
+        } else if (eventABIs.length > 1) {
+          throw new Error(`Multiple ABI entries for event '${eventName}', only uniquely named events are supported`);
+        }
+    
+        const [eventABI] = eventABIs;
+    
+        // The first topic will equal the hash of the event signature
+        const eventSignature = `${eventName}(${eventABI.inputs.map((input) => input.type).join(",")})`;
+        const eventTopic = web3.utils.sha3(eventSignature);
+    
+        // Only decode events of type 'EventName'
+        return logs
+          .filter((log) => log.topics.length > 0 && log.topics[0] === eventTopic && (!address || log.address === address))
+          .map((log) => web3.eth.abi.decodeLog(eventABI.inputs, log.data, log.topics.slice(1)))
+          .map((decoded) => ({ event: eventName, args: decoded }));
+      },
+      sha3: (input) => {
+        if (ethers.utils.isHexString(input)) {
+          return ethers.utils.keccak256(input);
+        }
+        return ethers.utils.keccak256(ethers.utils.toUtf8Bytes(input));
+      },
+      getBalance: async (account) => {
+        const balance = await web3.eth.getBalance(account);
+        return new BN(balance);
       },
 };
 

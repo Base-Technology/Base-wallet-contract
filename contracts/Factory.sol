@@ -49,11 +49,11 @@ contract Factory is Managed{
   function createCounterfactualWallet(
       address _owner,
       address[] calldata _modules,
-      address _refundToken,
       bytes20 _salt,
+      uint256 _refundAmount,
+      address _refundToken,
       bytes calldata _ownerSignature,
-      bytes calldata _managerSignature,
-      uint256 _refundAmount
+      bytes calldata _managerSignature
     ) 
     external
     returns ( address _wallet )
@@ -62,6 +62,9 @@ contract Factory is Managed{
       bytes32 newsalt = newSalt(_salt, _owner, _modules);
       address payable wallet = payable(new Proxy{salt: newsalt}(walletImplementation));
       validateAuthorisedCreation(wallet, _managerSignature);
+      if(_modules.length == 1){
+        require(_modules[0] != address(0),"empty modules");
+      }
       configureWallet(BaseWallet(wallet), _owner, _modules);
 
       if (_refundAmount > 0 && _ownerSignature.length == 65) {
