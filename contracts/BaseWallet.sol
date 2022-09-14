@@ -177,6 +177,25 @@ contract BaseWallet is IWallet {
     // }
 
     /**
+     * @notice Performs a generic transaction.
+     * @param _target The address for the transaction.
+     * @param _value The value of the transaction.
+     * @param _data The data of the transaction.
+     */
+    function invoke(address _target, uint _value, bytes calldata _data) external moduleOnly returns (bytes memory _result) {
+        bool success;
+        (success, _result) = _target.call{value: _value}(_data);
+        if (!success) {
+            // solhint-disable-next-line no-inline-assembly
+            assembly {
+                returndatacopy(0, 0, returndatasize())
+                revert(0, returndatasize())
+            }
+        }
+        // emit Invoked(msg.sender, _target, _value, _data);
+    }
+
+    /**
      * @notice This method delegates the static call to a target contract if the data corresponds
      * to an enabled module, or logs the call otherwise.
      */
