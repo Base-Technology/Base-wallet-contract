@@ -4,10 +4,11 @@ pragma solidity ^0.8.3;
 import "./BaseModule.sol";
 import "./SecurityManager.sol";
 import "./RelayerManager.sol";
+import "./TransactionManager.sol";
 import "./Utils.sol";
 
 // contract WalletModule is BaseModule, SecurityManager{
-contract WalletModule is BaseModule, SecurityManager, RelayerManager {
+contract WalletModule is BaseModule, SecurityManager, RelayerManager,TransactionManager {
     constructor(
         IGuardianStorage _guardianStorage,
         ITransferStorage _userWhitelist,

@@ -299,7 +299,7 @@ contract("factory", (accounts) => {
         });
 
         it("should not be able to set manager to zero address", async () => {
-            await truffleAssert.reverts(factory.addManager(ethers.constants.AddressZero), "manager address must not be nulll");
+            await truffleAssert.reverts(factory.addManager(ethers.constants.AddressZero), "manager address must not be null");
         });
 
         it("should be able to set manager twice without error", async () => {

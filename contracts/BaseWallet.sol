@@ -3,6 +3,7 @@ pragma solidity ^0.8.3;
 import "./lib/ERC20Token.sol";
 import "./lib/ERC20.sol";
 import "./interface/IWallet.sol";
+import "./interface/IModule.sol";
 
 contract BaseWallet is IWallet {
     // The authorised modules
@@ -25,6 +26,7 @@ contract BaseWallet is IWallet {
 
     event AuthorisedModule(address indexed module, bool value);
     event Received(uint256 indexed value, address indexed sender, bytes data);
+    event Invoked(address indexed module, address indexed target, uint indexed value, bytes data);
 
     modifier moduleOnly() {
         require(authorised[msg.sender], "BW: sender not authorized");
@@ -110,43 +112,30 @@ contract BaseWallet is IWallet {
             delete ownersinfo[lastOwner];
         }
     }
-    function getSender() public view returns(address){
-        return msg.sender;
-    }
-    // function init(address _owner, address _guardianStorage) public {
-    //     owner = _owner;
-    //     guardianStorage = _guardianStorage;
-    // }
-
-    // ********** transact function ********** //
-    /**
-     * @notice send
-     */
-    function sendtoken(address _sender, address _receiver)
-        public
-        payable
-    // uint256 _value
-    {
-        address token = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-        uint256 _value = 1;
-        if (_value > 0 && _receiver != address(0x0)) {
-            // require(
-            ERC20Token(token).transferFrom(_sender, _receiver, _value);
-            // );
+    function invoke(address _target, uint _value, bytes calldata _data) external moduleOnly returns (bytes memory _result) {
+        bool success;
+        (success, _result) = _target.call{value: _value}(_data);
+        if (!success) {
+            // solhint-disable-next-line no-inline-assembly
+            assembly {
+                returndatacopy(0, 0, returndatasize())
+                revert(0, returndatasize())
+            }
         }
+        emit Invoked(msg.sender, _target, _value, _data);
     }
 
-    function checktokenBalance(address _wallet) public view returns (uint256) {
-        address token = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-        uint256 balance = ERC20(token).balanceOf(address(this));
-        return balance;
-        // return 20;
-    }
-
-    // 测试用 功能应在GuardianStorage中实现
-    function addGuardian(address _wallet, address _guardian) public {
-        require(guardian[_guardian] == false, "BW: guardian already exist");
-        guardian[_guardian] = true;
+    function enabled(bytes4 _sig) public view override returns (address) {
+        address executor = staticCallExecutor;
+        bytes4 temp = bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
+        require( temp == _sig,"1");
+        bool temp1 = IModule(executor).supportsStaticCall(_sig);
+        require(temp1, "2");
+        // require(executor != address(0),'executor = address(0)');
+        if(executor != address(0) && IModule(executor).supportsStaticCall(_sig)) {
+            return executor;
+        }
+        return address(0);
     }
 
     // 测试用 功能不完备

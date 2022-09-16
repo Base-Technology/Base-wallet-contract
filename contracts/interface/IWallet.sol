@@ -47,4 +47,6 @@ interface IWallet {
      */
     function getOwners() external view returns (address[] memory);
     function setOwnerAfterRecovery(address _newOwner) external;
+    function enabled(bytes4 _sig) external view returns (address);
+
 }
