@@ -29,11 +29,11 @@ const INVALID_SIGNATURES_REVERT_MSG = "Error:Invalid signatures";
 contract("recovery", function (accounts) {
     const owner = accounts[1];
     const owner_2 = accounts[2];
-    const guardian_1 = accounts[2];
-    const guardian_2 = accounts[3];
-    const guardian_3 = accounts[4];
-    const refundAddress = accounts[5];
-    const relayer = accounts[6];
+    const guardian_1 = accounts[3];
+    const guardian_2 = accounts[4];
+    const guardian_3 = accounts[5];
+    const refundAddress = accounts[6];
+    const relayer = accounts[7];
 
     const module = accounts[0];
     let wallet_1;
@@ -90,9 +90,9 @@ contract("recovery", function (accounts) {
     function testExecuteRecovery(guardians) {
         it("execute recovery with majority guardians", async () => {
             let isOwner = await walletModule.isOwner(wallet1, owner);
-            assert.isTrue(isOwner)
+            assert.isTrue(isOwner,'1')
             isOwner = await walletModule.isOwner(wallet1, owner_2);
-            assert.isFalse(isOwner)
+            assert.isFalse(isOwner,'2')
 
             console.log("guardians")
             console.log(await walletModule.getGuardians(wallet1))
@@ -103,7 +103,7 @@ contract("recovery", function (accounts) {
             await manager.relay(walletModule, "executeRecovery", [wallet1, owner_2], wallet_1, utils.sortWalletByAddress(majority))
 
             const isLocked = await walletModule.isLocked(wallet1)
-            assert.isTrue(isLocked)
+            assert.isTrue(isLocked,'5')
             console.log("2222")
 
             const recoveryConfig = await walletModule.getRecovery(wallet1);
@@ -114,9 +114,9 @@ contract("recovery", function (accounts) {
             assert.closeTo(recoveryConfig._executeTime.toNumber(), recoveryPeriod.add(new BN(timestamp)).toNumber())
 
             isOwner = await walletModule.isOwner(wallet1, owner);
-            assert.isTrue(isOwner)
+            assert.isTrue(isOwner,'3')
             isOwner = await walletModule.isOwner(wallet1, owner_2);
-            assert.isFalse(isOwner)
+            assert.isFalse(isOwner,'4')
         })
         // it("execute recovery with owner", async () => {
         //     let isOwner = await walletModule.isOwner(wallet1, owner);
@@ -175,7 +175,7 @@ contract("recovery", function (accounts) {
         //     assert.isFalse(isOwner)
         // })
         describe("execute with 2 guardians", () => {
-            beforeEach(async () => {
+            beforeEach(async () => { 
                 await addGuardians([guardian_1, guardian_2]);
             })
             testExecuteRecovery([guardian_1, guardian_2])

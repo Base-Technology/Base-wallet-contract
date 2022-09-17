@@ -182,6 +182,11 @@ const utilities = {
         const balance = await web3.eth.getBalance(account);
         return new BN(balance);
       },
+      getTimestamp: async (blockNumber) => {
+        const blockN = !blockNumber ? "latest" : blockNumber;
+        const { timestamp } = await web3.eth.getBlock(blockN);
+        return timestamp;
+      },
 };
 
 module.exports = utilities;

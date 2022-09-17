@@ -3,6 +3,7 @@ pragma solidity ^0.8.3;
 
 import "./interface/IWallet.sol";
 import "./BaseModule.sol";
+import "./Utils.sol";
 
 abstract contract SecurityManager is BaseModule {
     uint256 internal immutable securityPeriod;
@@ -45,7 +46,7 @@ abstract contract SecurityManager is BaseModule {
         _;
     }
     modifier WhenNotRecovery(address _wallet){
-        require(recoveryConfigs[_wallet].executeTime < 0,"Error: is recovery");
+        require(recoveryConfigs[_wallet].executeTime == 0,"Error: is recovery");
         _;
     }
     modifier onlySelf(){
@@ -187,5 +188,38 @@ abstract contract SecurityManager is BaseModule {
     }
     function getRecovery(address _wallet) external view returns(address _newOwner, uint64 _executeTime, uint32 _guardianCount){
         return(recoveryConfigs[_wallet].newOwner, recoveryConfigs[_wallet].executeTime, recoveryConfigs[_wallet].guardianCount);
+    }
+
+    // simple recovery
+    // function executeRecovery_v2(address[] memory _executor, address _wallet, address _newOwner) external onlySelf() WhenNotRecovery(_wallet){
+    function executeRecovery_v2(address[] memory _executor, address _wallet, address _newOwner) external WhenNotRecovery(_wallet){
+        uint count = guardianCount(_wallet);
+        require(count > 0, "wallet must have at least 1 guardian to recovery");
+        require(_newOwner != address(0),"Error:newOwner can not be address(0)");
+        require(!isOwner(_wallet,_newOwner),"Error:newOwner is already a owner");
+        require(!isGuardian(_wallet,_newOwner),"Error:newOwner can not be a guardian");
+        uint len = _executor.length;
+        for (uint i = 0; i < len; i++){
+            require(isGuardian(_wallet,_executor[i]),"one of the executors is not guardian");
+        }
+        require(Utils.ceil(count, 2) <= len,"not enough executor");
+        recoveryConfigs[_wallet].newOwner = _newOwner;
+        recoveryConfigs[_wallet].executeTime = uint64(block.timestamp + recoveryPeriod);
+        recoveryConfigs[_wallet].guardianCount = uint32(guardianCount(_wallet));
+        setLock(_wallet, block.timestamp + lockPeriod, SecurityManager.executeRecovery.selector);
+    }
+    // function cancelRecovery_v2(address[] memory _executor,address _wallet) external onlySelf() onlyWhenRecovery(_wallet){
+    function cancelRecovery_v2(address[] memory _executor,address _wallet) external onlyWhenRecovery(_wallet){
+        uint len = _executor.length;
+        for (uint i = 0; i < len; i++){
+            if(IWallet(_wallet).isOwner(_executor[i])){
+                continue;
+            }
+            require(isGuardian(_wallet,_executor[i]),"one of the executors is not guardian/owner");
+        }
+        uint count = guardianCount(_wallet);
+        require(Utils.ceil(count+1, 2) <= len,"not enough executor");
+        delete recoveryConfigs[_wallet];
+        setLock(_wallet, 0, bytes4(0));
     }
 }
