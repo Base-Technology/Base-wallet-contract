@@ -26,7 +26,12 @@ contract BaseWallet is IWallet {
 
     event AuthorisedModule(address indexed module, bool value);
     event Received(uint256 indexed value, address indexed sender, bytes data);
-    event Invoked(address indexed module, address indexed target, uint indexed value, bytes data);
+    event Invoked(
+        address indexed module,
+        address indexed target,
+        uint256 indexed value,
+        bytes data
+    );
 
     modifier moduleOnly() {
         require(authorised[msg.sender], "BW: sender not authorized");
@@ -101,31 +106,18 @@ contract BaseWallet is IWallet {
     function getOwners() external view returns (address[] memory) {
         return owners;
     }
-    function setOwnerAfterRecovery(address _newOwner) external{
+
+    function setOwnerAfterRecovery(address _newOwner) external {
         delete ownersinfo[owners[0]];
         owners[0] = _newOwner;
         ownersinfo[_newOwner].isOwner = true;
         ownersinfo[_newOwner].index = 0;
-        while(owners.length > 1){
+        while (owners.length > 1) {
             address lastOwner = owners[owners.length - 1];
             owners.pop();
             delete ownersinfo[lastOwner];
         }
     }
-
-    function enabled(bytes4 _sig) public view override returns (address) {
-        address executor = staticCallExecutor;
-        bytes4 temp = bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
-        require( temp == _sig,"1");
-        bool temp1 = IModule(executor).supportsStaticCall(_sig);
-        require(temp1, "2");
-        // require(executor != address(0),'executor = address(0)');
-        if(executor != address(0) && IModule(executor).supportsStaticCall(_sig)) {
-            return executor;
-        }
-        return address(0);
-    }
-
     // 测试用 功能不完备
     function authoriseModule(address _module, bool _value) external {
         if (authorised[_module] != _value) {
@@ -145,13 +137,25 @@ contract BaseWallet is IWallet {
     /**
      * @inheritdoc IWallet
      */
-    // function enabled(bytes4 _sig) public view returns (address) {
-    //     address executor = staticCallExecutor;
-    //     if(executor != address(0) && IModule(executor).supportsStaticCall(_sig)) {
-    //         return executor;
-    //     }
-    //     return address(0);
-    // }
+    function enabled(bytes4 _sig) public view returns (address) {
+        address executor = staticCallExecutor;
+        if (
+            executor != address(0) && IModule(executor).supportsStaticCall(_sig)
+        ) {
+            return executor;
+        }
+        return address(0);
+    }
+
+    function enableStaticCall(
+        address _module,
+        bytes4 /* _method */
+    ) external override moduleOnly {
+        if (staticCallExecutor != _module) {
+            require(authorised[_module], "BW: unauthorized executor");
+            staticCallExecutor = _module;
+        }
+    }
 
     /**
      * @notice Performs a generic transaction.
