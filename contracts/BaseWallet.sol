@@ -26,12 +26,7 @@ contract BaseWallet is IWallet {
 
     event AuthorisedModule(address indexed module, bool value);
     event Received(uint256 indexed value, address indexed sender, bytes data);
-    event Invoked(
-        address indexed module,
-        address indexed target,
-        uint256 indexed value,
-        bytes data
-    );
+    event Invoked(address indexed module, address indexed target, uint indexed value, bytes data);
 
     modifier moduleOnly() {
         require(authorised[msg.sender], "BW: sender not authorized");

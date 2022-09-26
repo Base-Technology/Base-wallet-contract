@@ -49,14 +49,11 @@ abstract contract TransactionManager is BaseModule {
         require(IWallet(msg.sender).isOwner(signer), "TM: Invalid signer");
         return ERC1271_IS_VALID_SIGNATURE;
     }
-
-    function supportsInterface(bytes4 _interfaceID)
-        external
-        pure
-        returns (bool)
-    {
-        return
-            _interfaceID == ERC165_INTERFACE ||
-            _interfaceID == (ERC1155_RECEIVED ^ ERC1155_BATCH_RECEIVED);
-    }
+    function supportsInterface(bytes4 _interfaceID) external pure returns (bool) {
+    return
+        _interfaceID == ERC165_INTERFACE ||
+        _interfaceID == (ERC1155_RECEIVED ^ ERC1155_BATCH_RECEIVED);
 }
+
+}
+
