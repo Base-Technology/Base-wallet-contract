@@ -18,10 +18,10 @@ contract TestECDSA {
         bytes32 hash = keccak256(abi.encodePacked(msg.sender, nonce));
         bytes32 message = ECDSA.toEthSignedMessageHash(hash);
         address receivedAddress = ECDSA.recover(message, signature);
-        // require(
-        //     receivedAddress != address(0) && receivedAddress == signer,
-        //     "wrong sign"
-        // );
+        require(
+            receivedAddress != address(0) && receivedAddress == signer,
+            "wrong sign"
+        );
         return receivedAddress;
     }
 
