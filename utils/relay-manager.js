@@ -13,6 +13,10 @@ class RelayManager {
     _gasPrice = 0,
     _refundToken = ETH_TOKEN,
     _refundAddress = ethers.constants.AddressZero) {
+    if(_method == 'multiCall'){
+      console.log("_params: ",_params)
+      await _module.multiCall(..._params)
+    }
     console.log("---> getNamedAccounts")
     const { relayer: relayerAccount } = await utils.getNamedAccounts();
     console.log("---> getNonceForRelay")
@@ -20,6 +24,7 @@ class RelayManager {
     console.log("---> getChainId")
     const chainId = await utils.getChainId();
     const methodData = _module.contract.methods[_method](..._params).encodeABI();
+    console.log("methodData: ",methodData)
 
     const gasLimit = await RelayManager.getGasLimitRefund(_module, _method, _params, _wallet, _signers, _gasPrice);
 
@@ -50,7 +55,8 @@ class RelayManager {
       gasPrice,
       gasLimit,
       _refundToken,
-      _refundAddress).encodeABI();
+      _refundAddress).encodeABI();    
+    // console.log("executeData: ",executeData)
 
     const nonZerosString = executeData.toString().slice(2).replace(/00(?=(..)*$)/g, "");
     const nonZeros = nonZerosString.length;

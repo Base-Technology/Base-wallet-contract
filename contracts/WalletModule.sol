@@ -10,6 +10,7 @@ import "./Utils.sol";
 // contract WalletModule is BaseModule, SecurityManager{
 contract WalletModule is BaseModule, SecurityManager, RelayerManager,TransactionManager {
     constructor(
+        IModuleRegistry _registry,
         IGuardianStorage _guardianStorage,
         ITransferStorage _userWhitelist,
         IAuthoriser _authoriser,
@@ -19,13 +20,14 @@ contract WalletModule is BaseModule, SecurityManager, RelayerManager,Transaction
         uint256 _lockPeriod,
         uint256 _recoveryPeriod
     )
-        BaseModule(_guardianStorage,_userWhitelist, _authoriser)
+        BaseModule(_registry,_guardianStorage,_userWhitelist, _authoriser)
         SecurityManager(
             _securityPeriod,
             _securityWindow,
             _lockPeriod,
             _recoveryPeriod
         )
+        TransactionManager(_securityPeriod)
         RelayerManager(_uniswapRouter)
         // RelayerManager()
     {}
@@ -41,6 +43,13 @@ contract WalletModule is BaseModule, SecurityManager, RelayerManager,Transaction
         returns (uint256, OwnerSignature)
     {
         bytes4 methodId = Utils.functionPrefix(_data);
+        if (methodId == TransactionManager.multiCall.selector ||
+            methodId == TransactionManager.addToWhitelist.selector
+           )
+        {
+            // owner
+            return (1, OwnerSignature.Required);
+        }
         if (methodId == SecurityManager.executeRecovery.selector) {
             uint256 numberOfSignaturesRequired = numberOfGuardiansRequired(
                 _wallet,

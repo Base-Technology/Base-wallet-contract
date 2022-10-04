@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.3;
 
-import "./interface/IWallet.sol";
 import "./BaseModule.sol";
 import "./Utils.sol";
 
@@ -47,10 +46,6 @@ abstract contract SecurityManager is BaseModule {
     }
     modifier WhenNotRecovery(address _wallet){
         require(recoveryConfigs[_wallet].executeTime == 0,"Error: is recovery");
-        _;
-    }
-    modifier onlySelf(){
-        require(msg.sender == address(this),"Error:must be self");
         _;
     }
 

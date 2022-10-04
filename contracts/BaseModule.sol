@@ -5,6 +5,8 @@ import "./interface/IModule.sol";
 import "./interface/IGuardianStorage.sol";
 import "./interface/ITransferStorage.sol";
 import "./interface/IAuthoriser.sol";
+import "./interface/Iwallet.sol";
+import "./interface/IModuleRegistry.sol";
 import "./lib/ERC20.sol";
 
 abstract contract BaseModule is IModule {
@@ -14,11 +16,14 @@ abstract contract BaseModule is IModule {
     IGuardianStorage internal immutable guardianStorage;
     ITransferStorage internal immutable userWhitelist;
     IAuthoriser internal immutable authoriser;
+    IModuleRegistry internal immutable registry;
     constructor(
+        IModuleRegistry _registry,
         IGuardianStorage _guardianStorage,
         ITransferStorage _userWhitelist,
         IAuthoriser _authoriser
     ){
+        registry = _registry;
         guardianStorage = _guardianStorage;
         userWhitelist = _userWhitelist;
         authoriser = _authoriser;
@@ -52,6 +57,15 @@ abstract contract BaseModule is IModule {
         require(!_isLocked(_wallet),"Error:wallet is lock");
         _;
     }
+    modifier onlySelf(){
+        require(msg.sender == address(this),"Error:must be self");
+        _;
+    }
+    modifier onlyWalletOwnerOrSelf(address _wallet) {
+        require(msg.sender == address(this) || IWallet(_wallet).isOwner(msg.sender), "must be wallet owner/self");
+        _;
+    }
+
 
     function _isLocked(address _wallet) internal view returns(bool){
         return locks[_wallet].release > uint64(block.timestamp);

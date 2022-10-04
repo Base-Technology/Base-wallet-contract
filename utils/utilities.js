@@ -187,6 +187,13 @@ const utilities = {
         const { timestamp } = await web3.eth.getBlock(blockN);
         return timestamp;
       },
+      addTrustedContact: async (owner,wallet, target, module, securityPeriod) => {
+        await module.addToWhitelist(wallet.address, target, { from: owner });
+        await utilities.increaseTime(securityPeriod + 2);
+        const isTrusted = await module.isWhitelisted(wallet.address, target);
+        assert.isTrue(isTrusted, "should be trusted after the security period");
+      },
+      encodeTransaction: (to, value, data) => ({ to, value, data }),
 };
 
 module.exports = utilities;

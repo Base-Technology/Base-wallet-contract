@@ -4,7 +4,6 @@ pragma solidity ^0.8.3;
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./BaseModule.sol";
 import "./Utils.sol";
-import "./interface/IWallet.sol";
 import "./SimpleOracle.sol";
 import "./lib/ERC20.sol";
 
@@ -247,13 +246,13 @@ abstract contract RelayerManager is BaseModule, SimpleOracle {
 
             if (i == 0) {
                 if (_option == OwnerSignature.Required) {
-                    require(IWallet(_wallet).isOwner(signer),"_option == OwnerSignature.Required && is not owner");
+                    // require(IWallet(_wallet).isOwner(signer),"_option == OwnerSignature.Required && is not owner");
                     if (IWallet(_wallet).isOwner(signer)) {
                         continue;
                     }
                     return false;
                 } else if (_option == OwnerSignature.Optional) {
-                    require(IWallet(_wallet).isOwner(signer),"_option == OwnerSignature.Optional && is not owner");
+                    // require(IWallet(_wallet).isOwner(signer),"_option == OwnerSignature.Optional && is not owner");
                     if (IWallet(_wallet).isOwner(signer)) {
                         continue;
                     }
