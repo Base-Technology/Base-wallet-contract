@@ -14,6 +14,7 @@ const GuardianStorage = artifacts.require('GuardianStorage');
 const TransferStorage = artifacts.require("TransferStorage");
 const Authoriser = artifacts.require("Authoriser");
 const WalletModule = artifacts.require('WalletModule');
+const Registry = artifacts.require("ModuleRegistry");
 
 
 const SECURITY_PERIOD = 24;
@@ -42,6 +43,7 @@ contract("recovery", function (accounts) {
     let wallet2
     let guardianStorage
     let transferStorage;
+    let registry;
     let authoriser;
 
 
@@ -56,10 +58,11 @@ contract("recovery", function (accounts) {
         guardianStorage = await GuardianStorage.new();
         transferStorage = await TransferStorage.new();
         authoriser = await Authoriser.new(0);
+        registry = await Registry.new();
 
         const uniswapRouter = await UniswapV2Router01.new();
 
-        walletModule = await WalletModule.new(guardianStorage.address, transferStorage.address, authoriser.address, uniswapRouter.address, SECURITY_PERIOD, SECURITY_WINDOW, LOCK_PERIOD, RECOVERY_PERIOD);
+        walletModule = await WalletModule.new(registry.address,guardianStorage.address, transferStorage.address, authoriser.address, uniswapRouter.address, SECURITY_PERIOD, SECURITY_WINDOW, LOCK_PERIOD, RECOVERY_PERIOD);
 
         await authoriser.addDapp(0, relayer, ZERO_ADDRESS)
 

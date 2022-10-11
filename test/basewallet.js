@@ -42,8 +42,10 @@ contract("basewallet", function (accounts) {
   let guardianStorage;
   let transferStorage
   let authoriser
-  let implementation;
+  let walletImplementation;
   before(async () => {
+    BaseWallet.defaults({from:accounts[0]})
+    BaseWallet.setProvider(web3.currentProvider)
     registry = await Registry.new();
     guardianStorage = await GuardianStorage.new();
     transferStorage = await TransferStorage.new();
@@ -65,6 +67,11 @@ contract("basewallet", function (accounts) {
     await wallet_2.init(owner_2, modules);
   });
 
+  // beforeEach(async () => {
+  //   const proxy = await Proxy.new(walletImplementation.address);
+  //   wallet = await BaseWallet.at(proxy.address);
+  // });
+
   describe("test tranfer", () => {
     it("get balance", async () => {
       let owner_balance1 = await web3.eth.getBalance(wallet_1.address);
@@ -80,20 +87,48 @@ contract("basewallet", function (accounts) {
 
       console.log(owner_balance1, owner_balance1_after);
     });
-    it('test send to wallet', async () => {
+    it('test wallet to EOA',async () => {
       let balance = await web3.eth.getBalance(wallet_1.address)
-      let recipient_balance = await web3.eth.getBalance(wallet_2.address)
+      let recipient_balance = await web3.eth.getBalance(recipient)
       console.log('wallet_1 balance: ',balance)
       console.log('recipient_balance: ',recipient_balance)
-      await token.transfer(wallet_2.address, 100);
+      await token.transfer(recipient, 10);
       balance = await web3.eth.getBalance(wallet_1.address)
-      recipient_balance = await web3.eth.getBalance(wallet_2.address)
+      recipient_balance = await web3.eth.getBalance(recipient)
       console.log('wallet_1 balance: ',balance)
       console.log('recipient_balance: ',recipient_balance)
 
       await utils.addTrustedContact(owner_1, wallet_1, recipient, walletModule, SECURITY_PERIOD)
 
-      const data = token.contract.methods.transfer(recipient, 100).encodeABI()
+      const data = token.contract.methods.transfer(recipient, 10).encodeABI()
+      console.log('wallet_1 balance: ',balance)
+      console.log('recipient_balance: ',recipient_balance)
+      const transaction = utils.encodeTransaction(token.address, 0, data)
+      console.log([transaction])
+      balance = await web3.eth.getBalance(wallet_1.address)
+      recipient_balance = await web3.eth.getBalance(recipient)
+
+      await token.approve(wallet_1.address,100,{from:wallet_1.address})
+      const txReceipt = await manager.relay(walletModule, "multiCall", [wallet_1.address, [transaction]], wallet_1, [owner_1])
+      const { success, error } = utils.parseRelayReceipt(txReceipt)
+      assert.isTrue(success)
+      console.log('wallet_1 balance: ',balance)
+      console.log('recipient_balance: ',recipient_balance)
+    })
+    it('test wallet to wallet', async () => {
+      let balance = await web3.eth.getBalance(wallet_1.address)
+      let recipient_balance = await web3.eth.getBalance(wallet_2.address)
+      console.log('wallet_1 balance: ',balance)
+      console.log('recipient_balance: ',recipient_balance)
+      await token.transfer(wallet_2.address, 10);
+      balance = await web3.eth.getBalance(wallet_1.address)
+      recipient_balance = await web3.eth.getBalance(wallet_2.address)
+      console.log('wallet_1 balance: ',balance)
+      console.log('recipient_balance: ',recipient_balance)
+
+      await utils.addTrustedContact(owner_1, wallet_1, wallet_2.address, walletModule, SECURITY_PERIOD)
+
+      const data = token.contract.methods.transfer(wallet_2.address, 10).encodeABI()
       console.log('wallet_1 balance: ',balance)
       console.log('recipient_balance: ',recipient_balance)
       const transaction = utils.encodeTransaction(token.address, 0, data)
@@ -101,7 +136,7 @@ contract("basewallet", function (accounts) {
       balance = await web3.eth.getBalance(wallet_1.address)
       recipient_balance = await web3.eth.getBalance(wallet_2.address)
 
-      await token.approve(wallet_1.address,100)
+      await token.approve(wallet_1.address,100,{from:wallet_1.address})
       const txReceipt = await manager.relay(walletModule, "multiCall", [wallet_1.address, [transaction]], wallet_1, [owner_1])
       const { success, error } = utils.parseRelayReceipt(txReceipt)
       assert.isTrue(success)

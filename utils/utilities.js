@@ -74,7 +74,7 @@ const utilities = {
         return joinedSignatures;
     },
     getMessageHash: (from, value, data, chainId, nonce, gasPrice, gasLimit, refundToken, refundAddress) => {
-        const message = `0x${[
+        const message = new Uint8Array([
             "0x19",
             "0x00",
             from,
@@ -86,7 +86,20 @@ const utilities = {
             ethers.utils.hexZeroPad(ethers.utils.hexlify(gasLimit), 32),
             refundToken,
             refundAddress,
-        ].map((hex) => hex.slice(2)).join("")}`;
+        ])
+        // const message = `0x${[
+        //     "0x19",
+        //     "0x00",
+        //     from,
+        //     ethers.utils.hexZeroPad(ethers.utils.hexlify(value), 32),
+        //     data,
+        //     ethers.utils.hexZeroPad(ethers.utils.hexlify(chainId), 32),
+        //     nonce,
+        //     ethers.utils.hexZeroPad(ethers.utils.hexlify(gasPrice), 32),
+        //     ethers.utils.hexZeroPad(ethers.utils.hexlify(gasLimit), 32),
+        //     refundToken,
+        //     refundAddress,
+        // ].map((hex) => hex.slice(2)).join("")}`;
 
         const messageHash = ethers.utils.keccak256(message);
         return messageHash;
