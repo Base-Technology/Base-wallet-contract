@@ -7,10 +7,15 @@ const BaseWallet = artifacts.require('BaseWallet');
 const GuardianStorage = artifacts.require('GuardianStorage');
 const TestModule = artifacts.require("TestModule");
 const WalletModule = artifacts.require('WalletModule');
+const TransferStorage = artifacts.require("TransferStorage");
+const Authoriser = artifacts.require("Authoriser");
+const Registry = artifacts.require("ModuleRegistry");
+const UniswapV2Router01 = artifacts.require("DummyUniV2Router");
 
 const SECURITY_PERIOD = 24;
 const SECURITY_WINDOW = 12;
 const LOCK_PERIOD = 24 * 5;
+const RECOVERY_PERIOD = 36;
 
 
 contract("lock/unlock", function (accounts) {
@@ -25,6 +30,9 @@ contract("lock/unlock", function (accounts) {
     let wallet1
     let wallet2
     let guardianStorage
+    let registry;
+    let transferStorage
+    let authoriser
     let modules;
     let walletModule;
     let incorrectGuardian
@@ -36,9 +44,13 @@ contract("lock/unlock", function (accounts) {
         wallet1 = wallet_1.address;
         wallet_2 = await BaseWallet.new();
         wallet2 = wallet_2.address;
+        registry = await Registry.new();
         guardianStorage = await GuardianStorage.new();
+        transferStorage = await TransferStorage.new();
+        authoriser = await Authoriser.new(0);
+        uniswapRouter = await UniswapV2Router01.new();
 
-        walletModule = await WalletModule.new(guardianStorage.address, SECURITY_PERIOD, SECURITY_WINDOW, LOCK_PERIOD);
+        walletModule = await WalletModule.new(registry.address,guardianStorage.address, transferStorage.address, authoriser.address, uniswapRouter.address, SECURITY_PERIOD, SECURITY_WINDOW, LOCK_PERIOD, RECOVERY_PERIOD);
 
         await wallet_1.init(owner, modules);
         await wallet_2.init(owner, modules);

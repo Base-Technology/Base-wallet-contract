@@ -4,12 +4,18 @@ const { assert } = require("chai");
 
 const Factory = artifacts.require('factory');
 const BaseWallet = artifacts.require('BaseWallet');
+const Authoriser = artifacts.require("Authoriser");
 const GuardianStorage = artifacts.require('GuardianStorage');
+const TransferStorage = artifacts.require("TransferStorage");
 const TestModule = artifacts.require("TestModule");
 const WalletModule = artifacts.require('WalletModule');
+const Registry = artifacts.require("ModuleRegistry");
+const UniswapV2Router01 = artifacts.require("DummyUniV2Router");
 
 const SECURITY_PERIOD = 24;
 const SECURITY_WINDOW = 12;
+const LOCK_PERIOD = 24 * 5;
+const RECOVERY_PERIOD = 36;
 
 contract("GuardianManager", function (accounts) {
   const owner_1 = accounts[1];
@@ -26,10 +32,13 @@ contract("GuardianManager", function (accounts) {
   let wallet_2;
   let wallet1
   let guardianStorage
+  let transferStorage
+  let authoriser
   let modules;
   let walletModule;
   let incorrectGuardian
-
+  let registry;
+  let uniswapRouter
   before(async () => {
     incorrectGuardian = await TestModule.new();
     modules = [module];
@@ -37,7 +46,13 @@ contract("GuardianManager", function (accounts) {
     wallet_2 = await BaseWallet.new();
     wallet1 = wallet_1.address;
     guardianStorage = await GuardianStorage.new();
-    walletModule = await WalletModule.new(guardianStorage.address, SECURITY_PERIOD, SECURITY_WINDOW);
+    registry = await Registry.new();
+    transferStorage = await TransferStorage.new();
+    authoriser = await Authoriser.new(0);
+    uniswapRouter = await UniswapV2Router01.new();
+    walletModule = await WalletModule.new(registry.address,guardianStorage.address, transferStorage.address, authoriser.address, uniswapRouter.address, SECURITY_PERIOD, SECURITY_WINDOW, LOCK_PERIOD, RECOVERY_PERIOD);
+    console.log(owner_1)
+    console.log(modules)
     await wallet_1.init(owner_1, modules);
     await wallet_1.addOwner(owner_2);
     await wallet_1.addOwner(owner_3);
@@ -45,7 +60,7 @@ contract("GuardianManager", function (accounts) {
   });
   beforeEach(async () => {
     guardianStorage = await GuardianStorage.new();
-    walletModule = await WalletModule.new(guardianStorage.address, SECURITY_PERIOD, SECURITY_WINDOW);
+    walletModule = await WalletModule.new(registry.address,guardianStorage.address, transferStorage.address, authoriser.address, uniswapRouter.address, SECURITY_PERIOD, SECURITY_WINDOW, LOCK_PERIOD, RECOVERY_PERIOD);
   })
 
   describe("test GuardianStorage", () => {

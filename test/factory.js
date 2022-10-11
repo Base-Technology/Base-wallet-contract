@@ -10,6 +10,8 @@ const BaseWallet = artifacts.require("BaseWallet")
 const GuardianStorage = artifacts.require("GuardianStorage")
 const TransferStorage = artifacts.require("TransferStorage");
 const WalletModule = artifacts.require("WalletModule")
+const Registry = artifacts.require("ModuleRegistry");
+const Authoriser = artifacts.require("Authoriser");
 const UniswapV2Router01 = artifacts.require("DummyUniV2Router");
 const ERC20 = artifacts.require("TestERC20");
 
@@ -34,6 +36,7 @@ contract("factory", (accounts) => {
     let guardianStorage;
     let transferStorage
     let authoriser
+    let registry;
     let implementation;
     let module;
     let modules;
@@ -42,10 +45,12 @@ contract("factory", (accounts) => {
         implementation = await BaseWallet.new();
         guardianStorage = await GuardianStorage.new();
         factory = await Factory.new(implementation.address, guardianStorage.address, refundAddress);
+        authoriser = await Authoriser.new(0);
         await factory.addManager(infrastructure);
         transferStorage = await TransferStorage.new();
-        module = await WalletModule.new(guardianStorage.address, transferStorage.address, ZERO_ADDRESS, uniswapRouter.address, SECURITY_PERIOD, SECURITY_WINDOW, LOCK_PERIOD, RECOVERY_PERIOD);
-        modules = [module.address];
+        registry = await Registry.new();
+        walletModule = await WalletModule.new(registry.address,guardianStorage.address, transferStorage.address, authoriser.address, uniswapRouter.address, SECURITY_PERIOD, SECURITY_WINDOW, LOCK_PERIOD, RECOVERY_PERIOD);
+        modules = [walletModule.address];
     })
     async function signRefund(wallet, amount, token, signer) {
         const message = `0x${[

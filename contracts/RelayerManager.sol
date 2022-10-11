@@ -246,19 +246,16 @@ abstract contract RelayerManager is BaseModule, SimpleOracle {
 
             if (i == 0) {
                 if (_option == OwnerSignature.Required) {
-                    // require(IWallet(_wallet).isOwner(signer),"_option == OwnerSignature.Required && is not owner");
                     if (IWallet(_wallet).isOwner(signer)) {
                         continue;
                     }
                     return false;
                 } else if (_option == OwnerSignature.Optional) {
-                    // require(IWallet(_wallet).isOwner(signer),"_option == OwnerSignature.Optional && is not owner");
                     if (IWallet(_wallet).isOwner(signer)) {
                         continue;
                     }
                 }
             }
-            require(signer > lastSigner,"! signer <= lastSigner");
             if (signer <= lastSigner) {
                 return false;
             }
@@ -267,7 +264,6 @@ abstract contract RelayerManager is BaseModule, SimpleOracle {
                 guardians,
                 signer
             );
-            require(isGuardian, 'is not guardian');
             if (!isGuardian) {
                 return false;
             }
