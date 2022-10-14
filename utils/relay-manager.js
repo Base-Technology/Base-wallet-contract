@@ -13,18 +13,10 @@ class RelayManager {
     _gasPrice = 0,
     _refundToken = ETH_TOKEN,
     _refundAddress = ethers.constants.AddressZero) {
-    if(_method == 'multiCall'){
-      console.log("_params: ",_params)
-      await _module.multiCall(..._params)
-    }
-    console.log("---> getNamedAccounts")
     const { relayer: relayerAccount } = await utils.getNamedAccounts();
-    console.log("---> getNonceForRelay")
     const nonce = await utils.getNonceForRelay();
-    console.log("---> getChainId")
     const chainId = await utils.getChainId();
     const methodData = _module.contract.methods[_method](..._params).encodeABI();
-    console.log("methodData: ",methodData)
 
     const gasLimit = await RelayManager.getGasLimitRefund(_module, _method, _params, _wallet, _signers, _gasPrice);
 
@@ -32,7 +24,6 @@ class RelayManager {
     if (_refundToken !== ETH_TOKEN) {
       gasPrice = (await (await TestSimpleOracle.at(this.priceOracle)).ethToToken(_refundToken, _gasPrice)).toNumber();
     }
-    console.log("---> signOffchain")
     const signatures = await utils.signOffchain(
       _signers,
       _module.address,
@@ -46,7 +37,6 @@ class RelayManager {
       _refundAddress,
     );
 
-    console.log("---> _module.contract.methods.execute")
     const executeData = _module.contract.methods.execute(
       _wallet.address,
       methodData,
@@ -56,7 +46,6 @@ class RelayManager {
       gasLimit,
       _refundToken,
       _refundAddress).encodeABI();    
-    // console.log("executeData: ",executeData)
 
     const nonZerosString = executeData.toString().slice(2).replace(/00(?=(..)*$)/g, "");
     const nonZeros = nonZerosString.length;
@@ -69,7 +58,6 @@ class RelayManager {
     if (process.env.COVERAGE) {
       gas += 50_000;
     }
-    console.log("---> _module.execute")
     const tx = await _module.execute(
       _wallet.address,
       methodData,
@@ -81,7 +69,6 @@ class RelayManager {
       _refundAddress,
       { gas, gasPrice, from: relayerAccount },
     );
-    console.log('tx : ',tx)
     return tx.receipt;
   }
   

@@ -74,33 +74,9 @@ const utilities = {
         return joinedSignatures;
     },
     getMessageHash: (from, value, data, chainId, nonce, gasPrice, gasLimit, refundToken, refundAddress) => {
-        const message = new Uint8Array([
-            "0x19",
-            "0x00",
-            from,
-            ethers.utils.hexZeroPad(ethers.utils.hexlify(value), 32),
-            data,
-            ethers.utils.hexZeroPad(ethers.utils.hexlify(chainId), 32),
-            nonce,
-            ethers.utils.hexZeroPad(ethers.utils.hexlify(gasPrice), 32),
-            ethers.utils.hexZeroPad(ethers.utils.hexlify(gasLimit), 32),
-            refundToken,
-            refundAddress,
-        ])
-        // const message = `0x${[
-        //     "0x19",
-        //     "0x00",
-        //     from,
-        //     ethers.utils.hexZeroPad(ethers.utils.hexlify(value), 32),
-        //     data,
-        //     ethers.utils.hexZeroPad(ethers.utils.hexlify(chainId), 32),
-        //     nonce,
-        //     ethers.utils.hexZeroPad(ethers.utils.hexlify(gasPrice), 32),
-        //     ethers.utils.hexZeroPad(ethers.utils.hexlify(gasLimit), 32),
-        //     refundToken,
-        //     refundAddress,
-        // ].map((hex) => hex.slice(2)).join("")}`;
-
+        const message = ethers.utils.solidityPack(
+            ["bytes1","bytes1","address","uint256","bytes","uint256","uint256","uint256","uint256","address","address"], 
+            ["0x19","0x00",from,value,data,chainId,nonce,gasPrice,gasLimit,refundToken,refundAddress]);
         const messageHash = ethers.utils.keccak256(message);
         return messageHash;
     },
@@ -119,7 +95,6 @@ const utilities = {
         return normalizedSig;
     },
     createWallet: async (factoryAddress, owner, modules) => {
-        console.log('--> generateSaltValue')
         const salt = utilities.generateSaltValue();
         const managerSig = "0x";
         const factory = await Factory.at(factoryAddress);
@@ -127,7 +102,6 @@ const utilities = {
         const tx = await factory.createCounterfactualWallet(
             owner, modules, salt, 0, ethers.constants.AddressZero, ZERO_BYTES, managerSig);
 
-        console.log('--> getEvent')
         const event = await utilities.getEvent(tx.receipt, factory, "WalletCreated");
         return event.args.wallet;
     },
@@ -210,3 +184,4 @@ const utilities = {
 };
 
 module.exports = utilities;
+

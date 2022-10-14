@@ -88,60 +88,49 @@ contract("basewallet", function (accounts) {
       console.log(owner_balance1, owner_balance1_after);
     });
     it('test wallet to EOA',async () => {
+      
+      await token.transfer(wallet_1.address, 100);
+      await utils.addTrustedContact(owner_1, wallet_1, recipient, walletModule, SECURITY_PERIOD)
       let balance = await web3.eth.getBalance(wallet_1.address)
       let recipient_balance = await web3.eth.getBalance(recipient)
       console.log('wallet_1 balance: ',balance)
       console.log('recipient_balance: ',recipient_balance)
-      await token.transfer(recipient, 10);
-      balance = await web3.eth.getBalance(wallet_1.address)
-      recipient_balance = await web3.eth.getBalance(recipient)
-      console.log('wallet_1 balance: ',balance)
-      console.log('recipient_balance: ',recipient_balance)
-
-      await utils.addTrustedContact(owner_1, wallet_1, recipient, walletModule, SECURITY_PERIOD)
-
       const data = token.contract.methods.transfer(recipient, 10).encodeABI()
-      console.log('wallet_1 balance: ',balance)
-      console.log('recipient_balance: ',recipient_balance)
       const transaction = utils.encodeTransaction(token.address, 0, data)
       console.log([transaction])
+    
+      const txReceipt = await manager.relay(walletModule, "multiCall", [wallet_1.address, [transaction]], wallet_1, [owner_1])
+
       balance = await web3.eth.getBalance(wallet_1.address)
       recipient_balance = await web3.eth.getBalance(recipient)
-
-      await token.approve(wallet_1.address,100,{from:wallet_1.address})
-      const txReceipt = await manager.relay(walletModule, "multiCall", [wallet_1.address, [transaction]], wallet_1, [owner_1])
-      const { success, error } = utils.parseRelayReceipt(txReceipt)
-      assert.isTrue(success)
       console.log('wallet_1 balance: ',balance)
       console.log('recipient_balance: ',recipient_balance)
+
+      const { success, error } = utils.parseRelayReceipt(txReceipt)
+      assert.isTrue(success)
     })
     it('test wallet to wallet', async () => {
+      
+      await token.transfer(wallet_1.address, 100);
+      await utils.addTrustedContact(owner_1, wallet_1, wallet_2.address, walletModule, SECURITY_PERIOD)
       let balance = await web3.eth.getBalance(wallet_1.address)
       let recipient_balance = await web3.eth.getBalance(wallet_2.address)
       console.log('wallet_1 balance: ',balance)
       console.log('recipient_balance: ',recipient_balance)
-      await token.transfer(wallet_2.address, 10);
-      balance = await web3.eth.getBalance(wallet_1.address)
-      recipient_balance = await web3.eth.getBalance(wallet_2.address)
-      console.log('wallet_1 balance: ',balance)
-      console.log('recipient_balance: ',recipient_balance)
-
-      await utils.addTrustedContact(owner_1, wallet_1, wallet_2.address, walletModule, SECURITY_PERIOD)
 
       const data = token.contract.methods.transfer(wallet_2.address, 10).encodeABI()
-      console.log('wallet_1 balance: ',balance)
-      console.log('recipient_balance: ',recipient_balance)
       const transaction = utils.encodeTransaction(token.address, 0, data)
       console.log([transaction])
+    
+      const txReceipt = await manager.relay(walletModule, "multiCall", [wallet_1.address, [transaction]], wallet_1, [owner_1])
+
       balance = await web3.eth.getBalance(wallet_1.address)
       recipient_balance = await web3.eth.getBalance(wallet_2.address)
-
-      await token.approve(wallet_1.address,100,{from:wallet_1.address})
-      const txReceipt = await manager.relay(walletModule, "multiCall", [wallet_1.address, [transaction]], wallet_1, [owner_1])
-      const { success, error } = utils.parseRelayReceipt(txReceipt)
-      assert.isTrue(success)
       console.log('wallet_1 balance: ',balance)
       console.log('recipient_balance: ',recipient_balance)
+
+      const { success, error } = utils.parseRelayReceipt(txReceipt)
+      assert.isTrue(success)
     })
   });
 

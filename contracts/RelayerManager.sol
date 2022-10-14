@@ -168,7 +168,7 @@ abstract contract RelayerManager is BaseModule, SimpleOracle {
                             _from,
                             _value,
                             _data,
-                            block.chainid,
+                            uint256(1337),
                             _nonce,
                             _gasPrice,
                             _gasLimit,
