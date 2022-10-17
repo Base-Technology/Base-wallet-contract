@@ -252,54 +252,54 @@ contract("recovery", function (accounts) {
           });
     }
     describe("Execute Recovery", () => {
-        it("execute recovery with no guardians", async () => {
+        // it("execute recovery with no guardians", async () => {
 
-            let isOwner = await walletModule.isOwner(wallet1, owner);
-            assert.isTrue(isOwner)
-            isOwner = await walletModule.isOwner(wallet1, owner_2);
-            assert.isFalse(isOwner)
+        //     let isOwner = await walletModule.isOwner(wallet1, owner);
+        //     assert.isTrue(isOwner)
+        //     isOwner = await walletModule.isOwner(wallet1, owner_2);
+        //     assert.isFalse(isOwner)
 
-            await truffleAssert.reverts(manager.relay(walletModule, "executeRecovery", [wallet1, owner_2], wallet_1, []), "Error: no guardians on wallet")
+        //     await truffleAssert.reverts(manager.relay(walletModule, "executeRecovery", [wallet1, owner_2], wallet_1, []), "Error: no guardians on wallet")
 
-            const isLocked = await walletModule.isLocked(wallet1)
-            assert.isFalse(isLocked)
+        //     const isLocked = await walletModule.isLocked(wallet1)
+        //     assert.isFalse(isLocked)
 
-            isOwner = await walletModule.isOwner(wallet1, owner);
-            assert.isTrue(isOwner)
-            isOwner = await walletModule.isOwner(wallet1, owner_2);
-            assert.isFalse(isOwner)
-        })
-        describe("execute with 2 guardians", () => {
-            beforeEach(async () => {
-                await addGuardians([guardian_1, guardian_2]);
-            })
-            testExecuteRecovery([guardian_1, guardian_2])
-        })
-        describe('execute with 3guardians', async () => {
-            beforeEach(async () => {
-                await addGuardians([guardian_1, guardian_2, guardian_3]);
-            })
-            testExecuteRecovery([guardian_1, guardian_2, guardian_3])
-            it("execute recovery with duplicate guardian", async () => {
-                await truffleAssert.reverts(
-                    manager.relay(
-                        walletModule,
-                        "executeRecovery",
-                        [wallet1, owner_2],
-                        wallet_1,
-                        utils.sortWalletByAddress([guardian_1, guardian_1]),
-                    ), INVALID_SIGNATURES_REVERT_MSG
-                )
-            })
-        })
-        // describe('execute with 2 samart contrat guardians', () => {
-        //     let guardians
+        //     isOwner = await walletModule.isOwner(wallet1, owner);
+        //     assert.isTrue(isOwner)
+        //     isOwner = await walletModule.isOwner(wallet1, owner_2);
+        //     assert.isFalse(isOwner)
+        // })
+        // describe("execute with 2 guardians", () => {
         //     beforeEach(async () => {
-        //         guardians = await createSmartContractGuardians([guardian_1, guardian_2])
-        //         await addGuardians(guardians)
+        //         await addGuardians([guardian_1, guardian_2]);
         //     })
         //     testExecuteRecovery([guardian_1, guardian_2])
         // })
+        // describe('execute with 3guardians', async () => {
+        //     beforeEach(async () => {
+        //         await addGuardians([guardian_1, guardian_2, guardian_3]);
+        //     })
+        //     testExecuteRecovery([guardian_1, guardian_2, guardian_3])
+        //     it("execute recovery with duplicate guardian", async () => {
+        //         await truffleAssert.reverts(
+        //             manager.relay(
+        //                 walletModule,
+        //                 "executeRecovery",
+        //                 [wallet1, owner_2],
+        //                 wallet_1,
+        //                 utils.sortWalletByAddress([guardian_1, guardian_1]),
+        //             ), INVALID_SIGNATURES_REVERT_MSG
+        //         )
+        //     })
+        // })
+        describe('execute with 2 samart contrat guardians', () => {
+            let guardians
+            beforeEach(async () => {
+                guardians = await createSmartContractGuardians([guardian_1, guardian_2])
+                await addGuardians(guardians)
+            })
+            testExecuteRecovery([guardian_1, guardian_2])
+        })
         // describe('execute with 3 samart contrat guardians', () => {
         //     let guardians
         //     beforeEach(async () => {
@@ -308,102 +308,102 @@ contract("recovery", function (accounts) {
         //     })
         //     testExecuteRecovery([guardian_1, guardian_2, guardian_3])
         // })
-        describe("Safety Checks", () => {
-            it("execute with empty newOwner", async () => {
-                await addGuardians([guardian_1])
-                const txReceipt = await manager.relay(walletModule, "executeRecovery", [wallet1, ethers.constants.AddressZero], wallet_1, [guardian_1]);
-                const { success, error } = utils.parseRelayReceipt(txReceipt);
-                assert.isFalse(success);
-                assert.equal(error, "Error:newOwner can not be address(0)");
-            })
-            it("execute when newOwner is guardian", async () => {
-                await addGuardians([guardian_1])
-                const txReceipt = await manager.relay(walletModule, "executeRecovery",
-                    [wallet1, guardian_1], wallet_1, [guardian_1]);
-                const { success, error } = utils.parseRelayReceipt(txReceipt);
-                assert.isFalse(success);
-                assert.equal(error, "Error:newOwner can not be a guardian");
-            });
+        // describe("Safety Checks", () => {
+        //     it("execute with empty newOwner", async () => {
+        //         await addGuardians([guardian_1])
+        //         const txReceipt = await manager.relay(walletModule, "executeRecovery", [wallet1, ethers.constants.AddressZero], wallet_1, [guardian_1]);
+        //         const { success, error } = utils.parseRelayReceipt(txReceipt);
+        //         assert.isFalse(success);
+        //         assert.equal(error, "Error:newOwner can not be address(0)");
+        //     })
+        //     it("execute when newOwner is guardian", async () => {
+        //         await addGuardians([guardian_1])
+        //         const txReceipt = await manager.relay(walletModule, "executeRecovery",
+        //             [wallet1, guardian_1], wallet_1, [guardian_1]);
+        //         const { success, error } = utils.parseRelayReceipt(txReceipt);
+        //         assert.isFalse(success);
+        //         assert.equal(error, "Error:newOwner can not be a guardian");
+        //     });
 
-            it("should not be able to call executeRecovery if already in the process of Recovery", async () => {
-                await addGuardians([guardian_1])
+        //     it("should not be able to call executeRecovery if already in the process of Recovery", async () => {
+        //         await addGuardians([guardian_1])
 
-                await manager.relay(walletModule, "executeRecovery",
-                    [wallet1, owner_2], wallet_1, utils.sortWalletByAddress([guardian_1]));
+        //         await manager.relay(walletModule, "executeRecovery",
+        //             [wallet1, owner_2], wallet_1, utils.sortWalletByAddress([guardian_1]));
 
-                const txReceipt = await manager.relay(walletModule, "executeRecovery",
-                    [wallet1, owner_2], wallet_1, [guardian_1]);
-                const { success, error } = utils.parseRelayReceipt(txReceipt);
-                assert.isFalse(success);
-                assert.equal(error, "Error: is recovery");
-            });
-            it("when newowner is aready an owner", async () => {
-                await addGuardians([guardian_1])
-                const txReceipt = await manager.relay(walletModule, "executeRecovery",
-                    [wallet1, owner], wallet_1, [guardian_1]);
-                const { success, error } = utils.parseRelayReceipt(txReceipt);
-                assert.isFalse(success);
-                assert.equal(error, "Error:newOwner is already a owner");
-            })
-        })
+        //         const txReceipt = await manager.relay(walletModule, "executeRecovery",
+        //             [wallet1, owner_2], wallet_1, [guardian_1]);
+        //         const { success, error } = utils.parseRelayReceipt(txReceipt);
+        //         assert.isFalse(success);
+        //         assert.equal(error, "Error: is recovery");
+        //     });
+        //     it("when newowner is aready an owner", async () => {
+        //         await addGuardians([guardian_1])
+        //         const txReceipt = await manager.relay(walletModule, "executeRecovery",
+        //             [wallet1, owner], wallet_1, [guardian_1]);
+        //         const { success, error } = utils.parseRelayReceipt(txReceipt);
+        //         assert.isFalse(success);
+        //         assert.equal(error, "Error:newOwner is already a owner");
+        //     })
+        // })
     })
-    describe("finalize recovery", () => {
-        beforeEach(async () => {
-            await addGuardians([guardian_1, guardian_2, guardian_3])
-        })
-        it("finalize after the recovey period", async () => {
-            await manager.relay(
-                walletModule,
-                "executeRecovery",
-                [wallet1, owner_2],
-                wallet_1,
-                utils.sortWalletByAddress([guardian_1, guardian_2]),
-            );
-            await utils.increaseTime(40);
-            await manager.relay(walletModule, "finalizeRecovery", [wallet1], wallet_1, []);
-            const isLocked = await walletModule.isLocked(wallet1);
-            assert.isFalse(isLocked, "should no longer be locked after finalization of recovery");
-            let isOwner = await walletModule.isOwner(wallet1, owner);
-            assert.isFalse(isOwner)
-            isOwner = await walletModule.isOwner(wallet1, owner_2);
-            assert.isTrue(isOwner)
+    // describe("finalize recovery", () => {
+    //     beforeEach(async () => {
+    //         await addGuardians([guardian_1, guardian_2, guardian_3])
+    //     })
+    //     it("finalize after the recovey period", async () => {
+    //         await manager.relay(
+    //             walletModule,
+    //             "executeRecovery",
+    //             [wallet1, owner_2],
+    //             wallet_1,
+    //             utils.sortWalletByAddress([guardian_1, guardian_2]),
+    //         );
+    //         await utils.increaseTime(40);
+    //         await manager.relay(walletModule, "finalizeRecovery", [wallet1], wallet_1, []);
+    //         const isLocked = await walletModule.isLocked(wallet1);
+    //         assert.isFalse(isLocked, "should no longer be locked after finalization of recovery");
+    //         let isOwner = await walletModule.isOwner(wallet1, owner);
+    //         assert.isFalse(isOwner)
+    //         isOwner = await walletModule.isOwner(wallet1, owner_2);
+    //         assert.isTrue(isOwner)
 
-            const recoveryConfig = await walletModule.getRecovery(wallet1);
-            assert.equal(recoveryConfig._newOwner, ethers.constants.AddressZero);
-            assert.equal(recoveryConfig._executeTime.toNumber(), 0);
-            assert.equal(recoveryConfig._guardianCount, 0);
-        })
-        it("finalize between recoevery period", async () => {
-            await manager.relay(
-                walletModule,
-                "executeRecovery",
-                [wallet1, owner_2],
-                wallet_1,
-                utils.sortWalletByAddress([guardian_1, guardian_2]),
-            );
-            const txReceipt = await manager.relay(walletModule, "finalizeRecovery", [wallet1], wallet_1, []);
-            const { success, error } = utils.parseRelayReceipt(txReceipt);
-            assert.isFalse(success);
-            assert.equal(error, "Error:recovery period not end");
+    //         const recoveryConfig = await walletModule.getRecovery(wallet1);
+    //         assert.equal(recoveryConfig._newOwner, ethers.constants.AddressZero);
+    //         assert.equal(recoveryConfig._executeTime.toNumber(), 0);
+    //         assert.equal(recoveryConfig._guardianCount, 0);
+    //     })
+    //     it("finalize between recoevery period", async () => {
+    //         await manager.relay(
+    //             walletModule,
+    //             "executeRecovery",
+    //             [wallet1, owner_2],
+    //             wallet_1,
+    //             utils.sortWalletByAddress([guardian_1, guardian_2]),
+    //         );
+    //         const txReceipt = await manager.relay(walletModule, "finalizeRecovery", [wallet1], wallet_1, []);
+    //         const { success, error } = utils.parseRelayReceipt(txReceipt);
+    //         assert.isFalse(success);
+    //         assert.equal(error, "Error:recovery period not end");
 
-            const isLocked = await walletModule.isLocked(wallet1);
-            assert.isTrue(isLocked);
-        })
-    })
-    describe("cancel recovery", () => {
-        describe("EOA guardians", () => {
-            beforeEach(async () => {
-                await addGuardians([guardian_1, guardian_2, guardian_3])
-                await manager.relay(
-                    walletModule,
-                    "executeRecovery",
-                    [wallet1, owner_2],
-                    wallet_1,
-                    utils.sortWalletByAddress([guardian_1, guardian_2]),
-                );
-            })
-            testCancelRecovery()
-        })
+    //         const isLocked = await walletModule.isLocked(wallet1);
+    //         assert.isTrue(isLocked);
+    //     })
+    // })
+    // describe("cancel recovery", () => {
+    //     describe("EOA guardians", () => {
+    //         beforeEach(async () => {
+    //             await addGuardians([guardian_1, guardian_2, guardian_3])
+    //             await manager.relay(
+    //                 walletModule,
+    //                 "executeRecovery",
+    //                 [wallet1, owner_2],
+    //                 wallet_1,
+    //                 utils.sortWalletByAddress([guardian_1, guardian_2]),
+    //             );
+    //         })
+    //         testCancelRecovery()
+    //     })
         // describe("samart contrat guardians", () => {
         //     beforeEach(async () => {
         //         const scGuardians = await createSmartContractGuardians([guardian_1,guardian_2, guardian_3]);
@@ -419,5 +419,5 @@ contract("recovery", function (accounts) {
         
         //       testCancelRecovery();
         // })
-    })
+    // })
 });

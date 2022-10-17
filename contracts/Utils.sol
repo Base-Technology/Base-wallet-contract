@@ -4,7 +4,12 @@ pragma solidity ^0.8.3;
 /**
  * @title Utils
  * @notice Common utility methods used by modules.
+ * 
+ * 
+ * 
  */
+
+import "./BaseWallet.sol";
 library Utils {
 
     // ERC20, ERC721 & ERC1155 transfers & approvals
@@ -154,15 +159,17 @@ library Utils {
         address owner = address(0);
 
         // solhint-disable-next-line no-inline-assembly
-        assembly {
-            let ptr := mload(0x40)
-            mstore(ptr,OWNER_SIG)
-            let result := staticcall(25000, _guardian, ptr, 0x20, ptr, 0x20)
-            if eq(result, 1) {
-                owner := mload(ptr)
-            }
-        }
-        return owner == _owner;
+        // assembly {
+        //     let ptr := mload(0x40)
+        //     mstore(ptr,OWNER_SIG)
+        //     let result := staticcall(25000, _guardian, ptr, 0x20, ptr, 0x20)
+        //     if eq(result, 1) {
+        //         owner := mload(ptr)
+        //     }
+        // }
+        // return owner == _owner;
+
+        return IWallet(_guardian).isOwner(_owner);
     }
 
     /**

@@ -5,7 +5,7 @@ import "./interface/IModule.sol";
 import "./interface/IGuardianStorage.sol";
 import "./interface/ITransferStorage.sol";
 import "./interface/IAuthoriser.sol";
-import "./interface/Iwallet.sol";
+import "./interface/IWallet.sol";
 import "./interface/IModuleRegistry.sol";
 import "./lib/ERC20.sol";
 
