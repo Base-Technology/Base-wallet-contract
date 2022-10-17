@@ -5,6 +5,10 @@ pragma solidity ^0.8.3;
  * @title Utils
  * @notice Common utility methods used by modules.
  */
+
+// import "./BaseWallet.sol";
+import "./interface/IWallet.sol";
+
 library Utils {
 
     // ERC20, ERC721 & ERC1155 transfers & approvals
@@ -131,8 +135,11 @@ library Utils {
                     continue;
                 }
                 // check if _guardian is the owner of a smart contract guardian
+                // require(isContract(_guardians[i]), "a");
+                // require(isGuardianOwner(_guardians[i], _guardian), "b");
                 if (isContract(_guardians[i]) && isGuardianOwner(_guardians[i], _guardian)) {
                     isFound = true;
+                    // require(false, "123");
                     continue;
                 }
             }
@@ -154,15 +161,16 @@ library Utils {
         address owner = address(0);
 
         // solhint-disable-next-line no-inline-assembly
-        assembly {
-            let ptr := mload(0x40)
-            mstore(ptr,OWNER_SIG)
-            let result := staticcall(25000, _guardian, ptr, 0x20, ptr, 0x20)
-            if eq(result, 1) {
-                owner := mload(ptr)
-            }
-        }
-        return owner == _owner;
+        return IWallet(_guardian).isOwner(_owner);
+        // assembly {
+        //     let ptr := mload(0x40)
+        //     mstore(ptr,OWNER_SIG)
+        //     let result := staticcall(25000, _guardian, ptr, 0x20, ptr, 0x20)
+        //     if eq(result, 1) {
+        //         owner := mload(ptr)
+        //     }
+        // }
+        // return owner == _owner;
     }
 
     /**
