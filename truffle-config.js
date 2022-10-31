@@ -80,7 +80,7 @@ module.exports = {
 
   // Set default mocha options here, use special reporters, etc.
   mocha: {
-    // useColors: true,
+    // useColors: false,
     // timeout: 1_000_000,
     // reporter: "eth-gas-reporter",
     // reporterOptions: {
