@@ -69,6 +69,7 @@ class RelayManager {
       _refundAddress,
       { gas, gasPrice, from: relayerAccount },
     );
+    // console.log(tx)
     return tx.receipt;
   }
   
