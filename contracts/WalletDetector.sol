@@ -43,7 +43,7 @@ contract WalletDetector is Owned {
         if(!acceptedImplementations[_implementation].exists){
             implementations.push(_implementation);
             acceptedImplementations[_implementation].exists = true;
-            acceptedImplementations[_implementation].index = uint128(codes.length - 1);
+            acceptedImplementations[_implementation].index = uint128(implementations.length - 1);
             emit AddImplementation(_implementation);
         }
     }

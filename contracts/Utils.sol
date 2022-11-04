@@ -156,7 +156,7 @@ library Utils {
     * @param _owner The owner to verify.
     */
     function isGuardianOwner(address _guardian, address _owner) internal view returns (bool) {
-        address owner = address(0);
+        // address owner = address(0);
 
         // solhint-disable-next-line no-inline-assembly
         // assembly {
