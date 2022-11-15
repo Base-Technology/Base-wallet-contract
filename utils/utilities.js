@@ -181,6 +181,27 @@ const utilities = {
         assert.isTrue(isTrusted, "should be trusted after the security period");
       },
       encodeTransaction: (to, value, data) => ({ to, value, data }),
+      initNonce: async (owner,wallet, module, manager, securityPeriod) => {
+        const nonceInitialiser = (await utilities.getNamedAccounts()).freeAccounts.slice(-1)[0];
+        await utilities.addTrustedContact(owner,wallet, nonceInitialiser, module, securityPeriod);
+        const transaction = utilities.encodeTransaction(nonceInitialiser, 1, ZERO_BYTES);
+        await manager.relay(
+          module,
+          "multiCall",
+          [wallet.address, [transaction]],
+          wallet,
+          [owner]);
+        const nonce = await module.getNonce(wallet.address);
+        assert.isTrue(nonce.gt(0), "nonce init failed");
+      },
+      encodeCalls: (calls) => calls.map((call) => {
+        if (!Array.isArray(call)) {
+          return call;
+        }
+        const [instance, method, params = [], value = 0] = call;
+        const data = instance.contract.methods[method](...params).encodeABI();
+        return utilities.encodeTransaction(instance.address, value, data);
+      }),
 };
 
 module.exports = utilities;

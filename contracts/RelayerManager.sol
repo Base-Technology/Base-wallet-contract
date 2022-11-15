@@ -330,4 +330,7 @@ abstract contract RelayerManager is BaseModule, SimpleOracle {
             emit Refund(_wallet, refundAddress, _refundToken, refundAmount);
         }
     }
+    function getNonce(address _wallet) external view returns (uint256 nonce) {
+        return relayer[_wallet].nonce;
+    }
 }
