@@ -4,40 +4,35 @@ global.artifacts = artifacts;
 const ethers = require("ethers");
 
 const GuardianStorage = artifacts.require("GuardianStorage");
-// const TransferStorage = artifacts.require("TransferStorage");
-// const Proxy = artifacts.require("Proxy");
-// const BaseWallet = artifacts.require("BaseWallet");
-// const ModuleRegistry = artifacts.require("ModuleRegistry");
-// const Factory = artifacts.require("Factory");
-// const WalletDetector = artifacts.require("WalletDetector");
+const TransferStorage = artifacts.require("TransferStorage");
+const Proxy = artifacts.require("Proxy");
+const BaseWallet = artifacts.require("BaseWallet");
+const WalletModule = artifacts.require('WalletModule');
+const ModuleRegistry = artifacts.require("ModuleRegistry");
+const Factory = artifacts.require("Factory");
+const WalletDetector = artifacts.require("WalletDetector");
+const Authoriser = artifacts.require("Authoriser");
+const DummyUniV2Router = artifacts.require("DummyUniV2Router");
+
 
 // const utils = require("../utils/utilities.js");
+const deployManager = require("../utils/deploy-manager.js");
 
-async function main() {
-    // const accounts = await web3.eth.getAccounts();
-    
-    // const {configurator} = await deployManager.getProps();
-    // const { config } = configurator;
+const SECURITY_PERIOD = 24;
+const SECURITY_WINDOW = 12;
+const LOCK_PERIOD = 24 * 5;
+const RECOVERY_PERIOD = 36;
 
-    // Deploy the Guardian Storage
-    const GuardianStorageWrapper = await GuardianStorage.new();
-    console.log("Deployed GuardianStorageWrapper at ", GuardianStorageWrapper.address);
-    // Deploy the Transfer Storage
-    // const TransferStorageWrapper = await TransferStorage.new();
-    // console.log("Deployed TransferStorageWrapper at ", TransferStorageWrapper.address);
-
-    // // Deploy the Base Wallet Library
-    // const BaseWalletWrapper = await BaseWallet.new();
-    // console.log("Deployed BaseWallet at ", BaseWalletWrapper.address);
-    // // Deploy the Wallet Factory
-    // const WalletFactoryWrapper = await Factory.new(
-    //     BaseWalletWrapper.address, GuardianStorageWrapper.address, accounts[10]);
-    // console.log("Deployed WalletFactory at ", WalletFactoryWrapper.address);
-    // // Deploy ArgentWalletDetector contract
-    // const WalletDetectorWrapper = await WalletDetector.new([], []);
-    // console.log("Deployed WalletDetector at ", WalletDetectorWrapper.address);
-}
-
-module.exports = function (callback) {
-    main().then(() => callback()).catch((err) => callback(err));
+module.exports = function(deployer,network,accounts) {
+    // deployment steps
+    deployer.deploy(GuardianStorage);
+    deployer.deploy(TransferStorage);
+    deployer.deploy(WalletDetector,[],[]);
+    deployer.deploy(BaseWallet);
+    deployer.deploy(Factory,BaseWallet.address, GuardianStorage.address, accounts[0]);
+    deployer.deploy(Proxy,BaseWallet.address);
+    deployer.deploy(ModuleRegistry);
+    deployer.deploy(Authoriser,0);
+    deployer.deploy(DummyUniV2Router);
+    deployer.deploy(WalletModule,ModuleRegistry.address,GuardianStorage.address, TransferStorage.address, Authoriser.address, DummyUniV2Router.address, SECURITY_PERIOD, SECURITY_WINDOW, LOCK_PERIOD, RECOVERY_PERIOD);
   };
