@@ -1,4 +1,5 @@
 
+const { assert } = require("chai");
 const ethers = require("ethers");
 const BN = require("bn.js");
 const Factory = artifacts.require("Factory");
