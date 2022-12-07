@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 /**
  * ERC20 test contract.
  */
-contract TestERC20 is ERC20("ArgentToken", "AGT") {
+contract TestERC20 is ERC20("BaseToken", "BT") {
     uint8 internal tokenDecimals;
 
     constructor (address[] memory _initialAccounts, uint _supply, uint8 _decimals) {
