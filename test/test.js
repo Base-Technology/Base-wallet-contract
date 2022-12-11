@@ -13,7 +13,7 @@ const GuardianStorage = artifacts.require('GuardianStorage');
 const TransferStorage = artifacts.require("TransferStorage");
 const Authoriser = artifacts.require("Authoriser");
 // const WalletModule = artifacts.require('WalletModule');
-const WalletModule = artifacts.require('testWM');
+// const WalletModule = artifacts.require('testWM');
 
 const SECURITY_PERIOD = 24;
 const SECURITY_WINDOW = 12;

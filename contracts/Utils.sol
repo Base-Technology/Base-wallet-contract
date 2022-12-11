@@ -136,8 +136,11 @@ library Utils {
                     continue;
                 }
                 // check if _guardian is the owner of a smart contract guardian
+                // require(isContract(_guardians[i]), "a");
+                // require(isGuardianOwner(_guardians[i], _guardian), "b");
                 if (isContract(_guardians[i]) && isGuardianOwner(_guardians[i], _guardian)) {
                     isFound = true;
+                    // require(false, "123");
                     continue;
                 }
             }
