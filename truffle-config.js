@@ -18,8 +18,8 @@
  *
  */
 
-// const HDWalletProvider = require('@truffle/hdwallet-provider');
-//
+const HDWalletProvider = require('@truffle/hdwallet-provider');
+const { mnemonic } = require('./secrets.json');
 // const fs = require('fs');
 // const mnemonic = fs.readFileSync(".secret").toString().trim();
 
