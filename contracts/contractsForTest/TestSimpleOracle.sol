@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.3;
+pragma solidity >=0.8.4;
 
 import "../SimpleOracle.sol";
 
 contract TestSimpleOracle is SimpleOracle {
-
     bytes32 internal creationCode;
 
     constructor(address _uniswapRouter) SimpleOracle(_uniswapRouter) {
         address uniswapV2Factory = IUniswapV2Router01(_uniswapRouter).factory();
-        (bool success, bytes memory _res) = uniswapV2Factory.staticcall(abi.encodeWithSignature("getKeccakOfPairCreationCode()"));
+        (bool success, bytes memory _res) = uniswapV2Factory.staticcall(
+            abi.encodeWithSignature("getKeccakOfPairCreationCode()")
+        );
         if (success) {
             creationCode = abi.decode(_res, (bytes32));
         }
@@ -19,12 +20,20 @@ contract TestSimpleOracle is SimpleOracle {
         return inToken(_token, _ethAmount);
     }
 
-    function getPairForSorted(address tokenA, address tokenB) internal override view returns (address pair) {
-        pair = address(uint160(uint256(keccak256(abi.encodePacked(
-                hex'ff',
-                uniswapV2Factory,
-                keccak256(abi.encodePacked(tokenA, tokenB)),
-                creationCode
-            )))));
+    function getPairForSorted(address tokenA, address tokenB) internal view override returns (address pair) {
+        pair = address(
+            uint160(
+                uint256(
+                    keccak256(
+                        abi.encodePacked(
+                            hex"ff",
+                            uniswapV2Factory,
+                            keccak256(abi.encodePacked(tokenA, tokenB)),
+                            creationCode
+                        )
+                    )
+                )
+            )
+        );
     }
 }

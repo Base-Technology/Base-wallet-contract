@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.3;
+pragma solidity >=0.8.4;
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router01.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 
 contract SimpleOracle {
     address internal immutable weth;
     address internal immutable uniswapV2Factory;
+
     // address internal weth;
     // address internal uniswapV2Factory;
 
@@ -14,22 +15,12 @@ contract SimpleOracle {
         uniswapV2Factory = IUniswapV2Router01(_uniswapRouter).factory();
     }
 
-    function inToken(address _token, uint256 _ethAmount)
-        internal
-        view
-        returns (uint256)
-    {
-        (uint256 wethReserve, uint256 tokenReserve) = getReservesForTokenPool(
-            _token
-        );
+    function inToken(address _token, uint256 _ethAmount) internal view returns (uint256) {
+        (uint256 wethReserve, uint256 tokenReserve) = getReservesForTokenPool(_token);
         return (_ethAmount * tokenReserve) / wethReserve;
     }
 
-    function getReservesForTokenPool(address _token)
-        internal
-        view
-        returns (uint256 wethReserve, uint256 tokenReserve)
-    {
+    function getReservesForTokenPool(address _token) internal view returns (uint256 wethReserve, uint256 tokenReserve) {
         if (weth < _token) {
             address pair = getPairForSorted(weth, _token);
             (wethReserve, tokenReserve, ) = IUniswapV2Pair(pair).getReserves();
@@ -40,12 +31,7 @@ contract SimpleOracle {
         require(wethReserve != 0 && tokenReserve != 0, "SO: no liquidity");
     }
 
-    function getPairForSorted(address tokenA, address tokenB)
-        internal
-        view
-        virtual
-        returns (address)
-    {
+    function getPairForSorted(address tokenA, address tokenB) internal view virtual returns (address) {
         address pair = address(
             uint160(
                 uint256(

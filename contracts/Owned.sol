@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.3;
+pragma solidity >=0.8.4;
 
 contract Owned {
     address public owner;
 
     event OwnerChanged(address indexed _newOwner);
 
-    modifier onlyOwner {
-        require(msg.sender == owner,"Must be owner");
+    modifier onlyOwner() {
+        require(msg.sender == owner, "owned: Must be owner");
         _;
     }
 
@@ -15,7 +15,7 @@ contract Owned {
         owner = msg.sender;
     }
 
-    function changeOwner(address _newOwner)external onlyOwner{
+    function changeOwner(address _newOwner) external onlyOwner {
         require(_newOwner != address(0), "Address must not be null");
         owner = _newOwner;
         emit OwnerChanged(_newOwner);

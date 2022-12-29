@@ -14,7 +14,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 */
-pragma solidity ^0.8.3;
+pragma solidity >=0.8.4;
 
 import "./ERC20.sol";
 
@@ -31,11 +31,7 @@ contract ERC20Token is ERC20 {
 
     event Transfer(address indexed from, address indexed to, uint256 value);
 
-    event Approval(
-        address indexed owner,
-        address indexed spender,
-        uint256 value
-    );
+    event Approval(address indexed owner, address indexed spender, uint256 value);
 
     // constructor(
     //     string memory _name,
@@ -56,10 +52,11 @@ contract ERC20Token is ERC20 {
     //     balances[_firstHolder] = totalSupply_;
     // }
 
-    constructor (string memory _name, string memory _symbol){
+    constructor(string memory _name, string memory _symbol) {
         name = _name;
         symbol = _symbol;
     }
+
     /**
      * @dev total number of tokens in existence
      */
@@ -73,8 +70,8 @@ contract ERC20Token is ERC20 {
      * @param _value The amount to be transferred.
      */
     function transfer(address _receiver, uint256 _value) public returns (bool) {
-        require(_receiver != address(0),"Error:transfer to zero address");
-        require(_value <= balances[msg.sender], "Error: not enough balance" );
+        require(_receiver != address(0), "Error:transfer to zero address");
+        require(_value <= balances[msg.sender], "Error: not enough balance");
 
         balances[msg.sender] = balances[msg.sender] - _value;
         balances[_receiver] = balances[_receiver] + _value;
@@ -92,15 +89,11 @@ contract ERC20Token is ERC20 {
      * @param _receiver address The address which you want to transfer to
      * @param _value uint256 the amount of tokens to be transferred
      */
-    function transferFrom(
-        address _sender,
-        address _receiver,
-        uint256 _value
-    ) public returns (bool) {
-        require(_sender != address(0),"Error:send from zero address");
-        require(_sender != _receiver,"Error:send to self");
-        require(_value <= balances[_sender],"Error: not enough balances");
-        require(_value <= allowed[_sender][msg.sender],"Error:need to approve");
+    function transferFrom(address _sender, address _receiver, uint256 _value) public returns (bool) {
+        require(_sender != address(0), "Error:send from zero address");
+        require(_sender != _receiver, "Error:send to self");
+        require(_value <= balances[_sender], "Error: not enough balances");
+        require(_value <= allowed[_sender][msg.sender], "Error:need to approve");
 
         balances[_sender] = balances[_sender] - _value;
         balances[_receiver] = balances[_receiver] + _value;
@@ -120,7 +113,7 @@ contract ERC20Token is ERC20 {
      * @param _value The amount of tokens to be spent.
      */
     function approve(address _spender, uint256 _value) public returns (bool) {
-        require(_spender != address(0),"Error:approve to the zero address");
+        require(_spender != address(0), "Error:approve to the zero address");
         allowed[msg.sender][_spender] = _value;
         emit Approval(msg.sender, _spender, _value);
         return true;
@@ -132,11 +125,7 @@ contract ERC20Token is ERC20 {
      * @param _spender address The address which will spend the funds.
      * @return allowed uint256 specifying the amount of tokens still available for the spender.
      */
-    function allowance(address _owner, address _spender)
-        public
-        view
-        returns (uint256)
-    {
+    function allowance(address _owner, address _spender) public view returns (uint256) {
         return allowed[_owner][_spender];
     }
 }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity ^0.8.3;
+pragma solidity >=0.8.4;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
@@ -9,10 +9,10 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 contract TestERC20 is ERC20("ArgentToken", "AGT") {
     uint8 internal tokenDecimals;
 
-    constructor (address[] memory _initialAccounts, uint _supply, uint8 _decimals) {
+    constructor(address[] memory _initialAccounts, uint _supply, uint8 _decimals) {
         tokenDecimals = _decimals;
         for (uint i = 0; i < _initialAccounts.length; i++) {
-            _mint(_initialAccounts[i], _supply * 10**uint(_decimals));
+            _mint(_initialAccounts[i], _supply * 10 ** uint(_decimals));
         }
     }
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.3;
+pragma solidity >=0.8.4;
 import "./lib/ERC20Token.sol";
 import "./lib/ERC20.sol";
 import "./interface/IWallet.sol";
@@ -41,10 +41,7 @@ contract BaseWallet is IWallet {
         owners.push(_owner);
         modules = _modules.length;
         for (uint256 i = 0; i < _modules.length; i++) {
-            require(
-                authorised[_modules[i]] == false,
-                "BW: module is already added"
-            );
+            require(authorised[_modules[i]] == false, "BW: module is already added");
             authorised[_modules[i]] = true;
             // IModule(_modules[i]).init(address(this));
             emit AuthorisedModule(_modules[i], true);
@@ -82,15 +79,9 @@ contract BaseWallet is IWallet {
         delete ownersinfo[_owner];
     }
 
-    function changeOwner(address _oldOwner, address _newOwner)
-        external
-        override
-    {
+    function changeOwner(address _oldOwner, address _newOwner) external override {
         require(ownersinfo[_oldOwner].isOwner, "Error: old owner is not owner");
-        require(
-            !ownersinfo[_newOwner].isOwner,
-            "Error:new owner is already owner"
-        );
+        require(!ownersinfo[_newOwner].isOwner, "Error:new owner is already owner");
         uint256 index = ownersinfo[_oldOwner].index;
         owners[index] = _newOwner;
         ownersinfo[_newOwner].isOwner = true;
@@ -113,6 +104,7 @@ contract BaseWallet is IWallet {
             delete ownersinfo[lastOwner];
         }
     }
+
     // 测试用 功能不完备
     function authoriseModule(address _module, bool _value) external {
         if (authorised[_module] != _value) {
@@ -134,18 +126,13 @@ contract BaseWallet is IWallet {
      */
     function enabled(bytes4 _sig) public view returns (address) {
         address executor = staticCallExecutor;
-        if (
-            executor != address(0) && IModule(executor).supportsStaticCall(_sig)
-        ) {
+        if (executor != address(0) && IModule(executor).supportsStaticCall(_sig)) {
             return executor;
         }
         return address(0);
     }
 
-    function enableStaticCall(
-        address _module,
-        bytes4 /* _method */
-    ) external override moduleOnly {
+    function enableStaticCall(address _module, bytes4 /* _method */) external override moduleOnly {
         if (staticCallExecutor != _module) {
             require(authorised[_module], "BW: unauthorized executor");
             staticCallExecutor = _module;
@@ -158,9 +145,13 @@ contract BaseWallet is IWallet {
      * @param _value The value of the transaction.
      * @param _data The data of the transaction.
      */
-    function invoke(address _target, uint _value, bytes calldata _data) external moduleOnly returns (bytes memory _result) {
+    function invoke(
+        address _target,
+        uint _value,
+        bytes calldata _data
+    ) external moduleOnly returns (bytes memory _result) {
         bool success;
-        (success, _result) = _target.call{value: _value}(_data);
+        (success, _result) = _target.call{ value: _value }(_data);
         if (!success) {
             // solhint-disable-next-line no-inline-assembly
             assembly {
