@@ -69,7 +69,7 @@ contract ERC20Token is ERC20 {
      * @param _receiver The address to transfer to.
      * @param _value The amount to be transferred.
      */
-    function transfer(address _receiver, uint256 _value) public returns (bool) {
+    function transfer(address _receiver, uint256 _value) public override returns (bool) {
         require(_receiver != address(0), "Error:transfer to zero address");
         require(_value <= balances[msg.sender], "Error: not enough balance");
 
@@ -79,7 +79,7 @@ contract ERC20Token is ERC20 {
         return true;
     }
 
-    function balanceOf(address _wallet) public view returns (uint256 balance) {
+    function balanceOf(address _wallet) public view override returns (uint256 balance) {
         return balances[_wallet];
     }
 
@@ -89,7 +89,7 @@ contract ERC20Token is ERC20 {
      * @param _receiver address The address which you want to transfer to
      * @param _value uint256 the amount of tokens to be transferred
      */
-    function transferFrom(address _sender, address _receiver, uint256 _value) public returns (bool) {
+    function transferFrom(address _sender, address _receiver, uint256 _value) public override returns (bool) {
         require(_sender != address(0), "Error:send from zero address");
         require(_sender != _receiver, "Error:send to self");
         require(_value <= balances[_sender], "Error: not enough balances");
@@ -112,7 +112,7 @@ contract ERC20Token is ERC20 {
      * @param _spender The address which will spend the funds.
      * @param _value The amount of tokens to be spent.
      */
-    function approve(address _spender, uint256 _value) public returns (bool) {
+    function approve(address _spender, uint256 _value) public override returns (bool) {
         require(_spender != address(0), "Error:approve to the zero address");
         allowed[msg.sender][_spender] = _value;
         emit Approval(msg.sender, _spender, _value);
@@ -125,7 +125,7 @@ contract ERC20Token is ERC20 {
      * @param _spender address The address which will spend the funds.
      * @return allowed uint256 specifying the amount of tokens still available for the spender.
      */
-    function allowance(address _owner, address _spender) public view returns (uint256) {
+    function allowance(address _owner, address _spender) public view override returns (uint256) {
         return allowed[_owner][_spender];
     }
 }

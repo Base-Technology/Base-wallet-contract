@@ -33,7 +33,7 @@ contract BaseWallet is IWallet {
         _;
     }
 
-    function init(address _owner, address[] calldata _modules) external {
+    function init(address _owner, address[] calldata _modules) external override {
         require(modules == 0, "BW: wallet already initialised");
         require(_modules.length > 0, "BW: empty modules");
         ownersinfo[_owner].isOwner = true;
@@ -89,11 +89,11 @@ contract BaseWallet is IWallet {
         delete ownersinfo[_oldOwner];
     }
 
-    function getOwners() external view returns (address[] memory) {
+    function getOwners() external view override returns (address[] memory) {
         return owners;
     }
 
-    function setOwnerAfterRecovery(address _newOwner) external {
+    function setOwnerAfterRecovery(address _newOwner) external override {
         delete ownersinfo[owners[0]];
         owners[0] = _newOwner;
         ownersinfo[_newOwner].isOwner = true;
@@ -124,7 +124,7 @@ contract BaseWallet is IWallet {
     /**
      * @inheritdoc IWallet
      */
-    function enabled(bytes4 _sig) public view returns (address) {
+    function enabled(bytes4 _sig) public view override returns (address) {
         address executor = staticCallExecutor;
         if (executor != address(0) && IModule(executor).supportsStaticCall(_sig)) {
             return executor;
