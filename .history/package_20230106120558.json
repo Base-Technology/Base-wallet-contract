@@ -22,10 +22,7 @@
     "hardhat": "^2.9.6"
   },
   "dependencies": {
-    "@uniswap/v2-core": "^1.0.1",
-    "@uniswap/v2-periphery": "^1.1.0-beta.0",
     "node-xlsx": "^0.21.0",
-    "solidity-coverage": "^0.8.2",
-    "uniswap": "^0.0.1"
+    "solidity-coverage": "^0.8.2"
   }
 }
