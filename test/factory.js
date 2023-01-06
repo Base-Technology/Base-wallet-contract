@@ -110,7 +110,7 @@ contract("factory", (accounts) => {
             const isOwner = await wallet.isOwner(owner)
             assert.isTrue(isOwner)
 
-            const isAuthorised = await wallet.authorised(module.address);
+            const isAuthorised = await wallet.authorised(walletModule.address);
             assert.isTrue(isAuthorised)
 
             const count = await wallet.modules()
@@ -149,7 +149,7 @@ contract("factory", (accounts) => {
 
             const ERC1271_ISVALIDSIGNATURE_BYTES32 = utils.sha3("isValidSignature(bytes32,bytes)").slice(0, 10);
             const isValidSignatureDelegate = await wallet.enabled(ERC1271_ISVALIDSIGNATURE_BYTES32);
-            assert.equal(isValidSignatureDelegate, module.address);
+            assert.equal(isValidSignatureDelegate, walletModule.address);
 
             const ERC721_RECEIVED = utils.sha3("onERC721Received(address,address,uint256,bytes)").slice(0, 10);
             const isERC721Received = await wallet.enabled(ERC721_RECEIVED);
