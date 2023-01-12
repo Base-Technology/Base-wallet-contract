@@ -13,8 +13,8 @@ contract Managed is Owned {
     event ManagerAdded(address indexed _manager);
     event ManagerRevoked(address indexed _manager);
 
-    // function addManager(address _manager) external onlyOwner {
-    function addManager(address _manager) external {
+    function addManager(address _manager) external onlyOwner {
+    // function addManager(address _manager) external {
         require(_manager != address(0), "manager address must not be null");
         if (managers[_manager] == false) {
             managers[_manager] = true;
