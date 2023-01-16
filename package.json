@@ -24,6 +24,7 @@
     "web3": "^1.8.1"
   },
   "dependencies": {
+    "@nomiclabs/hardhat-truffle5": "^2.0.7",
     "@uniswap/v2-core": "^1.0.1",
     "@uniswap/v2-periphery": "^1.1.0-beta.0",
     "node-xlsx": "^0.21.0",
