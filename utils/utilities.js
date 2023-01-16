@@ -150,5 +150,10 @@ const utilities = {
     }
     return { success: args.success, error };
   },
+  getTimestamp: async (blockNumber) => {
+    const blockN = !blockNumber ? "latest" : blockNumber;
+    const { timestamp } = await web3.eth.getBlock(blockN);
+    return timestamp;
+  },
 }
 module.exports = utilities;
