@@ -16,28 +16,12 @@ const RECOVERY_PERIOD = 36;
 const accounts = config.networks.hardhat.accounts;
 
 describe("Guardian", async function () {
-    async function signRefund(wallet, amount, token, signer) {
-        const message = `0x${[wallet, ethers.utils.hexZeroPad(ethers.utils.hexlify(amount), 32), token]
-            .map((hex) => hex.slice(2))
-            .join("")}`;
-        const sig = await utils.signMessage(ethers.utils.keccak256(message), signer);
-        return sig;
-    }
     async function deployGuardianStorage() {
         const guardianStorageContract = await ethers.getContractFactory("GuardianStorage");
         const guardianStorage = await guardianStorageContract.deploy();
         return guardianStorage;
     }
-    async function deployFactoryFixture(guardianStorage) {
-        const baseWalletContract = await ethers.getContractFactory("BaseWallet");
-        const baseWallet = await baseWalletContract.deploy();
 
-        const signers = await ethers.getSigners();
-        const factoryContract = await ethers.getContractFactory("Factory");
-        const factory = await factoryContract.deploy(baseWallet.address, guardianStorage.address, signers[0].address);
-        await factory.deployed();
-        return factory;
-    }
     async function deployWalletModule(guardianStorage) {
         const moduleRegistryContract = await ethers.getContractFactory("ModuleRegistry");
         const moduleRegistry = await moduleRegistryContract.deploy();
