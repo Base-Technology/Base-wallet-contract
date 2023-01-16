@@ -1,3 +1,4 @@
+const { expect } = require("chai");
 const ethers = require("ethers");
 // const web3 = require("web3")
 const ETH_TOKEN = ethers.constants.AddressZero;
@@ -83,5 +84,71 @@ const utilities = {
     },
     (err, res) => (err ? reject(err) : resolve(res))
   )),
+  addTrustedContact: async (owner, wallet, target, module, securityPeriod) => {
+    await module.addToWhitelist(wallet.address, target, { from: owner });
+    await utilities.increaseTime(securityPeriod + 2);
+    const isTrusted = await module.isWhitelisted(wallet.address, target);
+    expect(isTrusted).to.be.equal(true)
+  },
+  encodeTransaction: (to, value, data) => ({ to, value, data }),
+  getNamedAccounts: async (accounts) => {
+    const addresses = accounts || await web3.eth.getAccounts();
+    const [infrastructure, owner, guardian1, relayer, tokenHolder, refundAddress, ...freeAccounts] = addresses;
+    return { infrastructure, owner, guardian1, relayer, tokenHolder, refundAddress, freeAccounts };
+  },
+  getNonceForRelay: async () => {
+    const block = await web3.eth.getBlockNumber();
+    const timestamp = new Date().getTime();
+    return `0x${ethers.utils.hexZeroPad(ethers.utils.hexlify(block), 16)
+      .slice(2)}${ethers.utils.hexZeroPad(ethers.utils.hexlify(timestamp), 16).slice(2)}`;
+  },
+  getChainId: async () => {
+    const chainId = await web3.eth.getChainId()
+    return chainId
+  },
+  signOffchain: async (signers, from, value, data, chainId, nonce, gasPrice, gasLimit, refundToken, refundAddress) => {
+    const messageHash = utilities.getMessageHash(from, value, data, chainId, nonce, gasPrice, gasLimit, refundToken, refundAddress);
+    const signatures = await Promise.all(
+      signers.map(async (signer) => {
+        const sig = await utilities.signMessage(messageHash, signer);
+        return sig.slice(2);
+      })
+    );
+    const joinedSignatures = `0x${signatures.join("")}`;
+
+    return joinedSignatures;
+  },
+  getMessageHash: (from, value, data, chainId, nonce, gasPrice, gasLimit, refundToken, refundAddress) => {
+    const message = ethers.utils.solidityPack(
+      ["bytes1", "bytes1", "address", "uint256", "bytes", "uint256", "uint256", "uint256", "uint256", "address", "address"],
+      ["0x19", "0x00", from, value, data, chainId, nonce, gasPrice, gasLimit, refundToken, refundAddress]);
+    const messageHash = ethers.utils.keccak256(message);
+    return messageHash;
+  },
+  sortWalletByAddress: (wallets) => wallets.sort((s1, s2) => {
+    const bn1 = ethers.BigNumber.from(s1);
+    const bn2 = ethers.BigNumber.from(s2);
+    if (bn1.lt(bn2)) return -1;
+    if (bn1.gt(bn2)) return 1;
+    return 0;
+  }),
+  parseRelayReceipt: (txReceipt) => {
+    const { args } = txReceipt.logs.find((e) => e.event === "TransactionExecuted");
+
+    let errorBytes;
+    let error;
+    if (!args.success && args.returnData) {
+      if (args.returnData.startsWith("0x08c379a0")) {
+        // Remove the encoded error signatures 08c379a0
+        const noErrorSelector = `0x${args.returnData.slice(10)}`;
+        const errorBytesArray = ethers.utils.defaultAbiCoder.decode(["bytes"], noErrorSelector);
+        errorBytes = errorBytesArray[0]; // eslint-disable-line prefer-destructuring
+      } else {
+        errorBytes = args.returnData; console.log(errorBytes);
+      }
+      error = ethers.utils.toUtf8String(errorBytes);
+    }
+    return { success: args.success, error };
+  },
 }
 module.exports = utilities;
