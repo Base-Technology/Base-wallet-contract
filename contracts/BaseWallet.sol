@@ -27,6 +27,7 @@ contract BaseWallet is IWallet {
     event AuthorisedModule(address indexed module, bool value);
     event Received(uint256 indexed value, address indexed sender, bytes data);
     event Invoked(address indexed module, address indexed target, uint indexed value, bytes data);
+    event WalletExcute(address indexed wallet, bool indexed success, bytes returnData);
 
     modifier moduleOnly() {
         require(authorised[msg.sender], "BW: sender not authorized");
@@ -191,4 +192,33 @@ contract BaseWallet is IWallet {
     }
 
     receive() external payable {}
+
+    function execute(
+        //address _wallet,
+        bytes calldata _data,
+        //uint256 _gasPrice,
+        //uint256 _gasLimit,
+        //address _refundToken,
+        //address _refundAddress
+    ) external returns (bool) {
+        require(ownersinfo[msg.sender].isOwner, "Error:is not an owner");
+        uint256 startGas = gasleft() + 21000 + msg.data.length * 8;
+        //require(startGas >= _gasLimit, "Error: not enough gas provided");
+        //StackExtension memory stack;
+        //(stack.requiredSignatures, stack.ownerSignatureRequirement) = getRequiredSignatures(_wallet, _data);
+        bool success;
+        bytes returnData;
+        (success, returnData) = address(this).call(_data);
+        // refund(
+        //     _wallet,
+        //     startGas,
+        //     _gasPrice,
+        //     _gasLimit,
+        //     _refundToken,
+        //     msg.sender,
+        // );
+        emit WalletExcute(address(this), success, returnData);
+        return success;
+    }
+
 }
