@@ -4,6 +4,7 @@ import "./lib/ERC20Token.sol";
 import "./lib/ERC20.sol";
 import "./interface/IWallet.sol";
 import "./interface/IModule.sol";
+// import "hardhat/console";
 
 contract BaseWallet is IWallet {
     // The authorised modules
@@ -194,21 +195,23 @@ contract BaseWallet is IWallet {
     receive() external payable {}
 
     function execute(
-        //address _wallet,
-        bytes calldata _data,
+        address _addr,
+        bytes calldata _data
         //uint256 _gasPrice,
         //uint256 _gasLimit,
         //address _refundToken,
         //address _refundAddress
     ) external returns (bool) {
         require(ownersinfo[msg.sender].isOwner, "Error:is not an owner");
-        uint256 startGas = gasleft() + 21000 + msg.data.length * 8;
+        // uint256 startGas = gasleft() + 21000 + msg.data.length * 8;
         //require(startGas >= _gasLimit, "Error: not enough gas provided");
         //StackExtension memory stack;
         //(stack.requiredSignatures, stack.ownerSignatureRequirement) = getRequiredSignatures(_wallet, _data);
+        // TestEx memory txt;
         bool success;
-        bytes returnData;
-        (success, returnData) = address(this).call(_data);
+        bytes memory returnData;
+        // address payable addr = payable(address(this));
+        (success, returnData) = _addr.call(_data);
         // refund(
         //     _wallet,
         //     startGas,
@@ -217,6 +220,7 @@ contract BaseWallet is IWallet {
         //     _refundToken,
         //     msg.sender,
         // );
+        // console.log("start");
         emit WalletExcute(address(this), success, returnData);
         return success;
     }
